@@ -109,6 +109,41 @@ class TensorProvider(Provider):
     """
 
     def __init__(self, tokenizer, batch_size):
+        self.__tokenizer = tokenizer
+        self.__batch_size = batch_size
+
+    def apply(self, *args):
+        """
+        Converts examples and labels lists to tensors with batches
+        """
+        if not args or not len(args):
+            raise ValueError("Missing arguments")
+        elif len(args) > 2:
+            raise ValueError("Getting more arguments than expected")
+        elif len(args) == 2:
+            x_lst, y_lst = args
+        elif len(args) == 1:
+            if isinstance(args[0], str):
+                x_lst = [args[0]]
+            elif isinstance(args[0], list):
+                x_lst = args[0]
+            else:
+                raise ValueError("Unexpected type as first argument")
+            y_lst = [0 for _ in range(len(x_lst))]
+        text_encoded_lst = self.__tokenizer(x_lst, truncation=True, padding=True)
+        tensor = tf.data.Dataset.from_tensor_slices((
+            dict(text_encoded_lst),
+            y_lst
+        ))
+        return tensor.batch(self.__batch_size)
+
+
+class TensorProvider2(Provider):
+    """
+    Provider for using Tensorflow tensors while training, evaluating and running
+    """
+
+    def __init__(self, tokenizer, batch_size):
         self._tokenizer = tokenizer
         self.__batch_size = batch_size
 
