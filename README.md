@@ -22,6 +22,29 @@ Paper published in ACL [here](https://www.aclweb.org/anthology/P17-1067/) with 1
 
 Dataset collected from Reddit r/SuicideWatch for users with 4 different tendencies of suicide
 
+### Urban Dicionary with LIWC Annotations
+
+Total category counts in `ud_data_best_def.csv`
+
+| LIWC Category | Count |
+| - | - |
+| BIO | 14,324 |
+| AFFECT | 5,505 |
+| INFORMAL | 4,505 |
+| PERCEPT | 3,614 |
+| RELATIV | 3,212 |
+| LEISURE | 2,965 |
+| DRIVES | 2,121 |
+| WORK | 2,019 |
+| COGPROC | 1,734 |
+| SOCIAL | 1,718 |
+| RELIG | 1,418 |
+| DEATH | 954 |
+| HOME | 638 |
+| MONEY | 632 |
+| - | - |
+| total | 45,359 |
+
 ## Preproessors
 
 ### Switch I and You

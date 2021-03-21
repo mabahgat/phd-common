@@ -180,11 +180,15 @@ class SequenceClassificationModel(HFModel):
 
         return history
     
-    def evaluate(self, dataset: DatasetBase):
+    def _get_test_output(self, dataset: DatasetBase):
         test_tensor = dataset.testing_examples()
         y_test = SequenceClassificationModel.__labels_from_tensors(test_tensor)
         y_hat_test_prob = self._model.predict(test_tensor, verbose=run_verbosity)
         y_hat_test = [list(labels).index(max(labels)) for labels in y_hat_test_prob[0]]
+        return y_test, y_hat_test
+    
+    def evaluate(self, dataset: DatasetBase):
+        y_test, y_hat_test = self._get_test_output(dataset)
 
         fscore = metrics.f1_score(y_test, y_hat_test, average='macro')
         accuracy = metrics.accuracy_score(y_test, y_hat_test)
@@ -195,6 +199,10 @@ class SequenceClassificationModel(HFModel):
         }
         self._model_params_dict['evaluation'] = result_dict
         return result_dict
+    
+    def evaluate_detailed(self, dataset: DatasetBase):
+        y_test, y_hat_test = self._get_test_output(dataset)
+        return metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names(), output_dict=True)
 
     def predict(self, text):
         probs_np = self._model.predict(text)

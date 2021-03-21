@@ -20,9 +20,10 @@ def run_all():
 
 
 def run_single():
-    from phd_utils.test.test_explainers import TestLime
+    from phd_utils.test.test_config import TestConfig
     tests_lst = [
-        TestLime('test_tokenize_for_lime'),
+        TestConfig('test_get_attribute'),
+        TestConfig('test_get_item')
     ]
     test_suite = TestSuite()
     test_suite.addTests(tests_lst)

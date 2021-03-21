@@ -1,6 +1,6 @@
 import unittest
 
-from phd_utils.datasets_v2 import ClPsych, AdaptedAffectInTweets, EmoContext, AGNews
+from phd_utils.datasets_v2 import ClPsych, AdaptedAffectInTweets, EmoContext, AGNews, UrbanDictLiwcBestPost
 
 class TestClPsych(unittest.TestCase):
 
@@ -72,3 +72,11 @@ class TestAGNews(unittest.TestCase):
         x_test, y_test = dataset.testing_examples()
         self.assertEqual(len(x_test), len(y_test))
         self.assertEqual(len(x_test), 7600)
+
+
+class TestUrbanDictLiwcBestPost(unittest.TestCase):
+
+    def test_load(self):
+        dataset = UrbanDictLiwcBestPost(0.1)
+        dataset.load()
+        x_train, y_train = dataset.training_examples()
