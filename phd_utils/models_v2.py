@@ -17,13 +17,14 @@ from transformers import TFT5ForConditionalGeneration, T5Tokenizer, T5Config
 from tensorflow.python.client import device_lib
 
 from phd_utils.datasets_v2 import DatasetBase
+from phd_utils import global_config
 
 run_verbosity = 1
 
 
 class ModelConfig:
 
-    __default_base_path_str = "/home/mbahgat/ws/work/models/phd_framework"
+    __default_base_path_str = global_config.models.path
     params_file_name = "model_info.json"
 
     @staticmethod
@@ -203,6 +204,10 @@ class SequenceClassificationModel(HFModel):
     def evaluate_detailed(self, dataset: DatasetBase):
         y_test, y_hat_test = self._get_test_output(dataset)
         return metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names(), output_dict=True)
+    
+    def confusion_matrix(self, dataset: DatasetBase):
+        y_test, y_hat_test = self._get_test_output(dataset)
+        return metrics.confusion_matrix(y_test, y_hat_test)
 
     def predict(self, text):
         probs_np = self._model.predict(text)

@@ -7,8 +7,12 @@ import re
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 
+from phd_utils import global_config
+
 DISABLE_TQDM = False
 
+
+# Deprecated
 class Dataset(ABC):
 
     @staticmethod
@@ -35,9 +39,10 @@ class Dataset(ABC):
         pass
 
 
+# Deprecated
 class EmoNet(Dataset):
 
-    __FILE_PATH = '/home/mbahgat/ws/work/datasets/emo_net/emo_net_8class.tsv'
+    __FILE_PATH = global_config.datasets.emonet.path
     
     ID_LABEL = 'id'
     LABEL_LABEL = 'label'
@@ -113,10 +118,11 @@ class EmoNet(Dataset):
         return class_lst[0:train_size], class_lst[train_size:train_size+valid_size], class_lst[train_size+valid_size:]
 
 
+# Deprecated
 class ClPsych(Dataset):
 
-    _TRAIN_PATH = '/home/mbahgat/ws/work/jws/clpysch/data/task_A_train.posts.json'
-    _TEST_PATH = '/home/mbahgat/ws/work/jws/clpysch/data/task_A_test.posts.json'
+    _TRAIN_PATH = global_config.datasets.clpysch.task_a.path.train
+    _TEST_PATH = global_config.datasets.clpysch.task_a.path.test
 
     USER_ID_LABEL = 'user'
     TEXT_LABEL = 'text'
@@ -190,6 +196,7 @@ class ClPsych(Dataset):
         return class_lst[0:train_size], class_lst[train_size:]
     
 
+# Deprecated
 class PronounSwitch:
     #__TONES = ['subject', 'object', 'possive adjective', 'possive pronoun', 'reflexive pronoun']
 
@@ -212,6 +219,7 @@ class PronounSwitch:
         return new_text_str
 
 
+# Deprecated
 class ClPyschWithPronounSwitch(ClPsych, PronounSwitch):
 
     def __init__(self, to_pronoun_lst, from_pronoun_lst, train_lst, train_dict, test_lst, test_dict):
@@ -241,6 +249,7 @@ class ClPyschWithPronounSwitch(ClPsych, PronounSwitch):
         return example_obj
 
 
+# Deprecated
 class ClPsychWithYouSwitch(ClPyschWithPronounSwitch):
 
     def __init__(self, train_lst, train_dict, test_lst, test_dict):

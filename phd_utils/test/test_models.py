@@ -9,6 +9,8 @@ from transformers import TFBertForSequenceClassification, BertConfig
 from phd_utils.models import ModelConfig, HFModel, BertSequenceClassification
 from phd_utils.providers import PassThroughProvider
 
+from phd_utils import global_config
+
 
 @unittest.skip
 class StubModelForTesting(HFModel):
@@ -34,7 +36,7 @@ class StubModelForTesting(HFModel):
 class TestModelConfig(unittest.TestCase):
 
     def test_get_base_path(self):
-        self.assertEqual(ModelConfig.get_base_path(), "/home/mbahgat/ws/work/models/bert_finetune")
+        self.assertEqual(ModelConfig.get_base_path(), global_config.models.path)
     
     def test_set_base_path(self):
         with tempfile.TemporaryDirectory() as temp_dir_str:
@@ -47,7 +49,7 @@ class TestModelConfig(unittest.TestCase):
     
     def test_get_model_path(self):
         model_label_str = "a_model"
-        model_expceted_path_str = "/home/mbahgat/ws/work/models/bert_finetune/{}".format(model_label_str)
+        model_expceted_path_str = "{}/{}".format(global_config.models.path, model_label_str)
         self.assertEqual(ModelConfig.get_model_path(model_label_str), model_expceted_path_str)
 
 

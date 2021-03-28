@@ -279,8 +279,8 @@ class ClPsych(LocalDatasetWithOptionalValidation):
     @staticmethod
     def get_path():
         return {
-            'train': '/home/mbahgat/ws/work/jws/clpysch/data/task_A_train.posts.json',
-            'test': '/home/mbahgat/ws/work/jws/clpysch/data/task_A_test.posts.json'
+            'train': global_config.datasets.clpysch.task_a.path.train,
+            'test': global_config.datasets.clpysch.task_a.path.test
         }
     
     def _file_sys_load(self, set_type_str: str):
@@ -337,9 +337,9 @@ class AdaptedAffectInTweets(LocalDatasetBase):
     @staticmethod
     def get_path():
         return {
-            'train': '/home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-train.tsv',
-            'valid': '/home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-dev.tsv',
-            'test': '/home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-test.tsv'
+            'train': global_config.datasets.affect_in_tweets.path.train,
+            'valid': global_config.datasets.affect_in_tweets.path.dev,
+            'test': global_config.datasets.affect_in_tweets.path.test
         }
 
     def _file_sys_load(self, set_key_str: str):
@@ -368,19 +368,19 @@ class EmoContext(LocalDatasetBase):
     def get_path():
         return {
             'classify_emotions': {
-                'train': '/home/mbahgat/ws/work/datasets/emo_context/parts/3_class/train.tsv',
-                'valid': '/home/mbahgat/ws/work/datasets/emo_context/parts/3_class/dev.tsv',
-                'test': '/home/mbahgat/ws/work/datasets/emo_context/parts/3_class/test.tsv'
+                'train': global_config.datasets.emocontext.classify_emotions.path.train,
+                'valid': global_config.datasets.emocontext.classify_emotions.path.dev,
+                'test': global_config.datasets.emocontext.classify_emotions.path.test
                 },
             'emotions_vs_none': {
-                'train': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv',
-                'valid': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv',
-                'test': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv'
+                'train': global_config.datasets.emocontext.emotions_vs_none.path.train,
+                'valid': global_config.datasets.emocontext.emotions_vs_none.path.dev,
+                'test': global_config.datasets.emocontext.emotions_vs_none.path.test
             },
             'classify_all': {
-                'train': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv',
-                'valid': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv',
-                'test': '/home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv'
+                'train': global_config.datasets.emocontext.classify_all.path.train,
+                'valid': global_config.datasets.emocontext.classify_all.path.dev,
+                'test': global_config.datasets.emocontext.classify_all.path.test
             }
         }
     
@@ -434,8 +434,8 @@ class AGNews(LocalDatasetWithOptionalValidation):
     @staticmethod
     def get_path():
         return {
-            'train': '/home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/train.csv',
-            'test': '/home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/test.csv'
+            'train': global_config.datasets.agnews.path.train,
+            'test': global_config.datasets.agnews.path.test
         }
     
     def _file_sys_load(self, set_type_str: str):
@@ -458,201 +458,80 @@ class AGNews(LocalDatasetWithOptionalValidation):
         return 4
 
 
-# DEPRACTED
-class UrbanDictLiwcBestPost(LocalDatasetWithOptionalValidation):
-    """
-    Word entries from Urban Dictionary Annotated with LIWC
-    """
+class UrbanDictWithLiwcCategoryMapper:
 
-    _LABELS_lst = [
-        'WORK', 'AFFECT', 'BIO', 'RELIG', 'RELATIV', 'PERCEPT', 'INFORMAL',
-        'LEISURE', 'DRIVES', 'SOCIAL', 'COGPROC', 'DEATH', 'MONEY', 'HOME'
-        ]
+    def __init__(self, mappings_dict):
+        self.__mappings_dict = mappings_dict
     
-    def __init__(self, valid_prcnt, mode_str='merge'):
+    def map_to_first_liwc_cat(self, dataframe_pd, filter_empty=True):
         """
-        valid_prcnt : float
-            Validation percentage
-        mode_str : str, optional
-            Input sentences construction. Can take one of the value:
-            merge - append example to definition
-            definition - use definition only
-            example - use example only
+        Map LIWC categories list to the first category found
         """
-        if mode_str not in ['merge', 'definition', 'example']:
-            raise ValueError('Unexpected mode string {}'.format(mode_str))
-        self._mode_str = mode_str
-        super().__init__(valid_prcnt=valid_prcnt)
+        new_dataframe_pd = dataframe_pd.copy()
+        new_dataframe_pd['liwc'] = dataframe_pd['liwc'].apply(lambda liwc_cats_str: self.__use_first_liwc_category(liwc_cats_str))
+        if filter_empty:
+            new_dataframe_pd = new_dataframe_pd[~new_dataframe_pd['liwc'].str.fullmatch('^$')]
+        return new_dataframe_pd
 
-    @staticmethod
-    def get_path():
-        return {
-            'train': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_train.csv',
-            'test': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_test.csv'
-        }
-    
-    def _file_sys_load(self, set_type_str: str):
-        records_lst = LocalDatasetBase.load_csv(UrbanDictLiwcBestPost.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), UrbanDictLiwcBestPost._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
-        x_tuple, y_tuple = zip(*data_lst)
-        return list(x_tuple), list(y_tuple)
-    
-    def _create_input_text(self, row_lst):
-        if self._mode_str == 'merge':
-            return '{} {}'.format(row_lst[2], row_lst[3])
-        elif self._mode_str == 'definition':
-            return row_lst[3]
-        elif self._mode_str == 'exmple':
-            return row_lst[4]
-        else:
-            raise ValueError('Unexpected mode {}'.format(self._mode_str))
-    
-    @staticmethod
-    def _label_to_index(label_str):
-        return UrbanDictLiwcBestPost._LABELS_lst.index(label_str)
-    
-    def size(self):
-        return {
-            'train': 40826,
-            'test': 4533
-        }
+    def __use_first_liwc_category(self, liwc_cats_str: str) -> str:
+        liwc_cats_str = str(liwc_cats_str)
+        cats_lst = liwc_cats_str.split('|')
+        for cat_str in cats_lst:
+            if cat_str in self.__mappings_dict:
+                return self.__mappings_dict[cat_str] # pick the first one
+        return ""
 
-    def name(self):
-        return 'ud_liwc_best_post_valid{}'.format(self._valid_prcnt)
-
-    def class_count(self):
-        return len(UrbanDictLiwcBestPost._LABELS_lst)
-    
-    def class_names(self):
-        """
-        Returns class names if implemented
-        """
-        return UrbanDictLiwcBestPost._LABELS_lst
-
-# DEPRACTED
-class UrbanDictLiwcBestPostStrictV2LiwcV1(LocalDatasetWithOptionalValidation):
-    """
-    Word entries from Urban Dictionary Annotated with LIWC
-    in strict mode; that is, no wild cards are matches are used
-    Liwc V1 - using categories similar to V1 from this dataset
-    """
-
-    _LABELS_lst = [
-        'work', 'affect', 'bio', 'relig', 'relativ', 'percept', 'informal',
-        'leisure', 'drives', 'social', 'cogproc', 'death', 'money', 'home'
-        ]
-    
-    def __init__(self, valid_prcnt, mode_str='merge'):
-        """
-        valid_prcnt : float
-            Validation percentage
-        mode_str : str, optional
-            Input sentences construction. Can take one of the value:
-            merge - append example to definition
-            definition - use definition only
-            example - use example only
-        """
-        if mode_str not in ['merge', 'definition', 'example']:
-            raise ValueError('Unexpected mode string {}'.format(mode_str))
-        self._mode_str = mode_str
-        super().__init__(valid_prcnt=valid_prcnt)
-
-    @staticmethod
-    def get_path():
-        return {
-            'train': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_train.csv',
-            'test': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_test.csv'
-        }
-    
-    def _file_sys_load(self, set_type_str: str):
-        records_lst = LocalDatasetBase.load_csv(UrbanDictLiwcBestPostStrictV2LiwcV1.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), UrbanDictLiwcBestPostStrictV2LiwcV1._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
-        x_tuple, y_tuple = zip(*data_lst)
-        return list(x_tuple), list(y_tuple)
-    
-    def _create_input_text(self, row_lst):
-        if self._mode_str == 'merge':
-            return '{} {}'.format(row_lst[4], row_lst[5])
-        elif self._mode_str == 'definition':
-            return row_lst[4]
-        elif self._mode_str == 'exmple':
-            return row_lst[5]
-        else:
-            raise ValueError('Unexpected mode {}'.format(self._mode_str))
-    
-    @staticmethod
-    def _label_to_index(label_str):
-        return UrbanDictLiwcBestPostStrictV2LiwcV1._LABELS_lst.index(label_str)
-    
-    def size(self):
-        return {
-            'train': 2951,
-            'test': 940
-        }
-
-    def name(self):
-        return 'ud_liwc_best_strict_cats-v1_post_valid{}'.format(self._valid_prcnt)
-
-    def class_count(self):
-        return len(UrbanDictLiwcBestPostStrictV2LiwcV1._LABELS_lst)
-    
-    def class_names(self):
-        """
-        Returns class names if implemented
-        """
-        return UrbanDictLiwcBestPostStrictV2LiwcV1._LABELS_lst
-
-# DEPRACTED
-class UrbanDictLiwcBestPostNoWildCardV2Min10LiwcV1(UrbanDictLiwcBestPostStrictV2LiwcV1):
-    """
-    No entries matches wild cards from the test set
-    Min 10 more likes to be included
-    V1 categories
-    """
-
-    @staticmethod
-    def get_path():
-        return {
-            'train': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_train_no_wild_card_min10.csv',
-            'test': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_test.csv'
-        }
-    
-    def _file_sys_load(self, set_type_str: str):
-        records_lst = LocalDatasetBase.load_csv(UrbanDictLiwcBestPostNoWildCardV2Min10LiwcV1.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), UrbanDictLiwcBestPostStrictV2LiwcV1._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
-        x_tuple, y_tuple = zip(*data_lst)
-        return list(x_tuple), list(y_tuple)
-
-    def size(self):
-        return {
-            'train': 10233,
-            'test': 940
-        }
-    
-    def name(self):
-        return 'ud_liwc_best_no-wild-card_min10_cats-v1_post_valid{}'.format(self._valid_prcnt)
-
-# DEPRACTED
-class UrbanDictLiwcBestPostV2LiwcV1(UrbanDictLiwcBestPostStrictV2LiwcV1):
-
-    @staticmethod
-    def get_path():
-        return {
-            'train': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_train_min10.csv',
-            'test': '/home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_test.csv'
-        }
-    
-    def _file_sys_load(self, set_type_str: str):
-        records_lst = LocalDatasetBase.load_csv(UrbanDictLiwcBestPostV2LiwcV1.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), UrbanDictLiwcBestPostStrictV2LiwcV1._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
-        x_tuple, y_tuple = zip(*data_lst)
-        return list(x_tuple), list(y_tuple)
-
-    def size(self):
-        return {
-            'train': 53441,
-            'test': 940
-        }
+    MAPPING_14CLASS_dict = {
+        'affect': 'affect',
+        'posemo': 'affect',
+        'negemo': 'affect',
+        'anx': 'affect',
+        'anger': 'affect',
+        'sad': 'affect',
+        'social': 'social',
+        'family': 'social',
+        'friend': 'social',
+        'female': 'social',
+        'male': 'social',
+        'cogproc': 'cogproc',
+        'insight': 'cogproc',
+        'cause': 'cogproc',
+        'discrep': 'cogproc',
+        'tentat': 'cogproc',
+        'certain': 'cogproc',
+        'differ': 'cogproc',
+        'percept': 'percept',
+        'see': 'percept',
+        'hear': 'percept',
+        'feel': 'percept',
+        'bio': 'bio',
+        'body': 'bio',
+        'health': 'bio',
+        'sexual': 'bio',
+        'ingest': 'bio',
+        'drives': 'drives',
+        'affiliation': 'drives',
+        'achiev': 'drives',
+        'power': 'drives',
+        'reward': 'drives',
+        'risk': 'drives',
+        'relativ': 'relativ',
+        'motion': 'relativ',
+        'space': 'relativ',
+        'time': 'relativ',
+        'work': 'work',
+        'leisure': 'leisure',
+        'home': 'home',
+        'money': 'money',
+        'relig': 'relig',
+        'death': 'death',
+        'informal': 'informal',
+        'swear': 'informal',
+        'netspeak': 'informal',
+        'assent': 'informal',
+        'nonflu': 'informal',
+        'filler': 'informal'
+    }
 
 
 class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
@@ -668,9 +547,9 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
                 config_dict[name_str] = value
         if not config_dict:
             config_dict = {}
-        set_if_not_set('labels', 'v1') # v1
-        set_if_not_set('selection_mode', 'best_diff') # best_diff
-        set_if_not_set('train_type', 'strict') # strict, no_wild_card, no_wild_card_min5, no_wild_card_min10, everything
+        set_if_not_set('labels', 'liwc14') # liwc14
+        set_if_not_set('train_type', 'exact') # exact, all
+        set_if_not_set('selection_mode', 'top1') # all, top1, top10, mindiff1, mindiff10
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
         set_if_not_set('eval_mode', 'single') # single, any
         return config_dict
@@ -680,13 +559,13 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         Return data files path
         """
         return {
-            'test': global_config.datasets.ud_liwc.best_diff.strict.test,
-            'train': global_config.datasets.ud_liwc[self._config_dict['selection_mode']][self._config_dict['train_type']].train
+            'test': global_config.datasets.ud_liwc.liwc14.exact.test,
+            'train': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']]
         }
     
     def _file_sys_load(self, set_type_str: str):
         records_lst = LocalDatasetBase.load_csv(self.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), UrbanDictLiwcBestPostStrictV2LiwcV1._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
+        data_lst = [[self._create_input_text(row), self._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
         x_tuple, y_tuple = zip(*data_lst)
         return list(x_tuple), list(y_tuple)
     
@@ -701,12 +580,13 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             raise ValueError('Unexpected mode {}'.format(self._config_dict['text_mode']))
     
     def class_names(self):
-        if self._config_dict['labels'] == 'v1':
+        if self._config_dict['labels'] == 'liwc14':
             return ['WORK', 'AFFECT', 'BIO', 'RELIG', 'RELATIV', 'PERCEPT', 'INFORMAL', 'LEISURE', 'DRIVES', 'SOCIAL', 'COGPROC', 'DEATH', 'MONEY', 'HOME']
         else:
             raise ValueError('Missing or unknown labels type')
     
-    def _label_to_index(self, label_str):
+    def _label_to_index(self, label_str:str):
+        label_str = label_str.upper()
         return self.class_names().index(label_str)
     
     def class_count(self):
@@ -714,14 +594,17 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
     
     def size(self):
         size_dict = { 'test': 940 }
-        def set_if(type_str, value):
-            if self._config_dict['train_type'] == type_str:
+        def set_if(labels_str, train_type_str, selection_mode_str, value):
+            if self._config_dict['labels'] == labels_str and self._config_dict['train_type'] == train_type_str and self._config_dict['selection_mode'] == selection_mode_str:
                 size_dict['train'] = value
-        set_if('strict', 2951)
-        set_if('no_wild_card', 45437)
-        set_if('no_wild_card_min5', 16054)
-        set_if('no_wild_card_min10', 10313)
-        set_if('everything', 231715)
+        set_if('liwc14', 'exact', 'top1', 1772)
+        set_if('liwc14', 'exact', 'top10', 11633)
+        set_if('liwc14', 'exact', 'mindiff1', 22354)
+        set_if('liwc14', 'exact', 'mindiff10', 11174)
+        set_if('liwc14', 'exact', 'all', 51332)
+
+        set_if('liwc14', 'all', 'all', 369153)
+        set_if('liwc14', 'all', 'top1', 180263)
 
         if 'train' not in size_dict:
             raise ValueError('Missing or no train type')

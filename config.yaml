@@ -3,52 +3,64 @@ models:
 
 datasets:
   clpysch:
-    path.train: /home/mbahgat/ws/work/jws/clpysch/data/task_A_train.posts.json
-    path.test: /home/mbahgat/ws/work/jws/clpysch/data/task_A_test.posts.json
+    task_a:
+      path:
+        train: /home/mbahgat/ws/work/jws/clpysch/data/task_A_train.posts.json
+        test: /home/mbahgat/ws/work/jws/clpysch/data/task_A_test.posts.json
 
   affect_in_tweets:
-    path.train: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-train.tsv
-    path.dev: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-dev.tsv
-    path.test: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-test.tsv
+    path:
+      train: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-train.tsv
+      dev: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-dev.tsv
+      test: /home/mbahgat/ws/work/datasets/affect_in_tweets/2018-EI-oc-En-all-test.tsv
 
-  emocontext.classify_emotions:
-    path.train: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/train.tsv
-    path.dev: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/dev.tsv
-    path.test: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/test.tsv
+  emocontext:
+    classify_emotions:
+      path:
+        train: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/train.tsv
+        dev: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/dev.tsv
+        test: /home/mbahgat/ws/work/datasets/emo_context/parts/3_class/test.tsv
 
-  emocontext.emotions_vs_none: 
-    path.train: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv
-    path.dev: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv
-    path.test: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv
+    emotions_vs_none: 
+      path:
+        train: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv
+        dev: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv
+        test: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv
 
-  emocontext.classify_all:
-    path.train: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv
-    path.dev: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv
-    path.test: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv
+    classify_all:
+      path:
+        train: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/train.tsv
+        dev: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/dev.tsv
+        test: /home/mbahgat/ws/work/datasets/emo_context/parts/2_class/test.tsv
 
 
   agnews:
-    path.train: /home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/train.csv
-    path.test: /home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/test.csv
+    path:
+      train: /home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/train.csv
+      test: /home/mbahgat/ws/work/datasets/CharCnn_Keras/data/ag_news_csv/test.csv
 
   emonet:
     path: /home/mbahgat/ws/work/datasets/emo_net/emo_net_8class.tsv
       
   ud_liwc_best_v1:
-    path.train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_train.csv
-    path.test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_test.csv
+    path:
+      train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_train.csv
+      test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged/ud_data_best_def_test.csv
   
   ud_liwc:
-    best_diff:
-      strict:
-        train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_train.csv
-        test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_v1_ud_strict_test.csv
-      no_wild_cards:
-        train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_ud_train_no_wild_card.csv
-      no_wild_cards_min5:
-        train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_ud_train_no_wild_card_min5.csv
-      no_wild_cards_min10:
-        train: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2/liwc_ud_train_no_wild_card_min10.csv
+    liwc14:
+      exact:
+        test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_test.csv
+        train:
+          all: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact.csv
+          top1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1.csv
+          top10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10.csv
+          mindiff1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff1.csv
+          mindiff10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10.csv
+      all:
+        train: 
+          all: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train.csv
+          top1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_top1.csv
 
 liwc:
   path: /home/mbahgat/ws/work/resources/LIWC2015_English_Flat.dic

@@ -6,10 +6,13 @@ import tensorflow as tf
 from transformers import TFBertForSequenceClassification, BertTokenizer, BertConfig
 from sklearn import metrics
 
+from phd_utils import global_config
 
+
+# Deprecated
 class ModelConfig:
 
-    __base_path_str = "/home/mbahgat/ws/work/models/bert_finetune"
+    __base_path_str = global_config.models.path
 
     @staticmethod
     def set_base_path(path_str):
@@ -29,7 +32,7 @@ class ModelConfig:
     def model_exists(model_label_str):
         return os.path.exists(ModelConfig.get_model_path(model_label_str))
 
-
+# Deprecated
 class Model(ABC):
 
     def __init__(self, label_str):

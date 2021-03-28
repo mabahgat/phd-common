@@ -23,7 +23,8 @@ def run_single():
     from phd_utils.test.test_config import TestConfig
     tests_lst = [
         TestConfig('test_get_attribute'),
-        TestConfig('test_get_item')
+        TestConfig('test_get_item'),
+        TestConfig('test_mix')
     ]
     test_suite = TestSuite()
     test_suite.addTests(tests_lst)
