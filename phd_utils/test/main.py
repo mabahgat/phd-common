@@ -21,9 +21,9 @@ def run_all():
 
 
 def run_single():
-    from phd_utils.test.test_models_v2 import TestBertSequenceClassification
+    from phd_utils.test.test_dataset_v2 import TestUrbanDictWithLiwc
     tests_lst = [    
-        TestBertSequenceClassification('test_precision_recall_curve')
+        TestUrbanDictWithLiwc('test_load')
     ]
     test_suite = TestSuite()
     test_suite.addTests(tests_lst)

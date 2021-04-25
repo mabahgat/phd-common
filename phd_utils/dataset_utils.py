@@ -119,7 +119,7 @@ class UrbanDictWithLiwcCategoryMapper:
     }
 
 
-class UrbanDictWithLiwcUtil:
+class UrbanDictWithLiwcUtil: # TODO remove this and fix model evaluation
     """
     Helper tools
     """
@@ -141,16 +141,21 @@ class UrbanDictWithLiwcUtil:
         
     
     @staticmethod
-    def y_multilabel(dataset: UrbanDictWithLiwc, set_type):
+    def y_multilabel(dataset: UrbanDictWithLiwc, set_type='test'):
+        liwc14_mapper = UrbanDictWithLiwcCategoryMapper(UrbanDictWithLiwcCategoryMapper.MAPPING_14CLASS_dict)
+        class_names_lst = dataset.class_names()
+
         if set_type == 'test':    
-            test_path_str = dataset.get_path()['test_multiple']
+            test_path_str = dataset.get_path()['test']
+            test_df = pd.read_csv(test_path_str, index_col=0)
+
+            y_test_multi_lst = test_df['liwc'].apply(lambda cats_str: liwc14_mapper.get_mapped_liwc_categories(cats_str)).to_list()
+            return [[class_names_lst.index(cat_str.upper()) for cat_str in cat_lst] for cat_lst in y_test_multi_lst]
+
         elif set_type == 'dev' or set_type == 'val':
-            raise ValueError('Unexpected Set type {}'.format(set_type))
+            train_df = pd.read_csv(dataset.get_path()['train'])
+            y_valid_multi_lst = train_df['liwc'].iloc[dataset.valid_index_lst].apply(lambda cats_str: liwc14_mapper.get_mapped_liwc_categories(cats_str)).to_list()
+            return [[class_names_lst.index(cat_str.upper()) for cat_str in cat_lst] for cat_lst in y_valid_multi_lst]
+
         else:
             raise ValueError('Unexpected Set type {}'.format(set_type))
-        test_df = pd.read_csv(test_path_str, index_col=0)
-
-        liwc14_mapper = UrbanDictWithLiwcCategoryMapper(UrbanDictWithLiwcCategoryMapper.MAPPING_14CLASS_dict)
-        y_test_multi_lst = test_df['liwc'].apply(lambda cats_str: liwc14_mapper.get_mapped_liwc_categories(cats_str)).to_list()
-        class_names_lst = dataset.class_names()
-        return [[class_names_lst.index(cat_str.upper()) for cat_str in cat_lst] for cat_lst in y_test_multi_lst]

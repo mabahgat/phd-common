@@ -240,18 +240,25 @@ class LocalDatasetWithOptionalValidation(LocalDatasetBase):
         if valid_prcnt > 1 or valid_prcnt < 0:
             raise ValueError("Valid set percentage {} is not valid".format(valid_prcnt))
         self._valid_prcnt = valid_prcnt
+        self.train_index_lst = None
+        self.valid_index_lst = None
         super().__init__()
 
     def load(self, preprocessors_lst=None, provider:Provider=PassThroughProvider(), randomize=True, random_seed=0):
         x_train, y_train = self._file_sys_load('train')
         x_test, y_test = self._file_sys_load('test')
+        train_index_lst = list(range(len(x_train))) # to keep track of instances
         
         if self._valid_prcnt > 0:
+            y_train_org = y_train
             x_train, y_train, x_valid, y_valid = self.__split_train_valid(x_train, y_train)
+            train_index_lst, _, valid_index_lst, _ = self.__split_train_valid(train_index_lst, y_train_org)
         
         if randomize:
-            x_train, y_train = DatasetBase.randomize(x_train, y_train, random_seed)
-            x_valid, y_valid = DatasetBase.randomize(x_valid, y_valid, random_seed)
+            x_train_index_pair, y_train = DatasetBase.randomize(zip(x_train, train_index_lst), y_train, random_seed)
+            x_valid_index_pair, y_valid = DatasetBase.randomize(zip(x_valid, valid_index_lst), y_valid, random_seed)
+            x_train, train_index_lst = zip(*x_train_index_pair)
+            x_valid, valid_index_lst = zip(*x_valid_index_pair)
         
         x_train = DatasetBase.preprocess(x_train, preprocessors_lst)
         x_valid = DatasetBase.preprocess(x_valid, preprocessors_lst)
@@ -260,6 +267,9 @@ class LocalDatasetWithOptionalValidation(LocalDatasetBase):
         self._train = provider.apply(x_train, y_train)
         self._valid = provider.apply(x_valid, y_valid)
         self._test = provider.apply(x_test, y_test)
+
+        self.train_index_lst = list(train_index_lst)
+        self.valid_index_lst = list(valid_index_lst)
     
     def __split_train_valid(self, x_lst, y_lst):
         label_to_example_dict = {}
@@ -516,7 +526,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         if self._config_dict['labels'] == 'liwc14':
             return ['WORK', 'AFFECT', 'BIO', 'RELIG', 'RELATIV', 'PERCEPT', 'INFORMAL', 'LEISURE', 'DRIVES', 'SOCIAL', 'COGPROC', 'DEATH', 'MONEY', 'HOME']
         else:
-            raise ValueError('Missing or unknown labels type')
+            raise ValueError('Unexpected label type {}'.format(self._config_dict['labels']))
     
     def _label_to_index(self, label_str_lst:str):
         label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_str_lst.split("|")]
@@ -525,7 +535,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         elif self._config_dict['target_labels_count'] == 'multiple':
             return label_index_lst
         else:
-            raise ValueError('Unknown target labels count configuration {}'.format(self._config_dict['target_labels_count']))
+            raise ValueError('Unexpected target labels count {}'.format(self._config_dict['target_labels_count']))
     
     def class_count(self):
         return len(self.class_names())
