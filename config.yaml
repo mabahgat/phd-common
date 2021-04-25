@@ -50,13 +50,23 @@ datasets:
   ud_liwc:
     liwc14:
       exact:
-        test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_test.csv
+        test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
+          #single: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_test.csv
+          #multiple: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
         train:
           all: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact.csv
           top1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1.csv
+          top1_tweetsamples: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetsamples.csv
+          top1_tweetSamplesDefTweetDistTop10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetSamplesDefTweetDistTop10.csv
           top10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10.csv
           mindiff1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff1.csv
-          mindiff10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10.csv
+          #mindiff10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10.csv
+          mindiff10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14multiple_ud_train_exact_mindiff10.csv
+          mindiff10_tweetsamples: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples.csv
+          mindiff10_tweetsamples_top30: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples_top30.csv
+          mindiff10_tweetSamplesDefTweetDistTop10: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_minDiff10_tweetSamplesDefTweetDistTop10.csv
+          top10multiple: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10multiple.csv
+          mindiff10multiple: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10multiple.csv
       all:
         train: 
           all: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train.csv

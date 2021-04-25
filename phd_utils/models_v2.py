@@ -5,7 +5,7 @@ import re
 import json
 from datetime import datetime
 import time
-from typing import List
+from typing import List, Dict
 
 from sklearn import metrics
 import numpy as np
@@ -14,7 +14,6 @@ import tensorflow as tf
 from transformers import TFBertForSequenceClassification, BertTokenizer, BertConfig
 from transformers import TFRobertaForSequenceClassification, RobertaTokenizer, RobertaConfig
 from transformers import TFT5ForConditionalGeneration, T5Tokenizer, T5Config
-from tensorflow.python.client import device_lib
 
 from phd_utils.datasets_v2 import DatasetBase
 from phd_utils import global_config
@@ -77,7 +76,7 @@ class ModelBase(ABC): # Previously named "Model"
         pass
 
     @abstractmethod
-    def evaluate(self, dataset: DatasetBase):
+    def evaluate(self, dataset: DatasetBase, set_type):
         pass
 
     @abstractmethod
@@ -157,6 +156,9 @@ class SequenceClassificationModel(HFModel):
     def __init__(self, class_count: int, label_str: str, config, tokenizer, model_name_str: str = 'bert-base-uncased'):
         self._config = config
         self._config.num_labels = class_count
+        self.__y_test_cache = {}
+        self.__y_hat_test_cache = {}
+        self.__y_hat_test_prob_cache = {}
         if not active_model_config.model_exists(label_str):
             model = self._create_new_model(model_name_str)
             super().__init__(label_str, model, tokenizer)
@@ -167,6 +169,8 @@ class SequenceClassificationModel(HFModel):
             self._loaded_from_disk = True
     
     def train(self, dataset: DatasetBase, epochs):
+        self.reset_cached_test_output()
+
         start = time.process_time()
         optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5)
         self._model.compile(optimizer=optimizer, loss=self._model.compute_loss)
@@ -181,15 +185,58 @@ class SequenceClassificationModel(HFModel):
 
         return history
     
-    def _get_test_output(self, dataset: DatasetBase):
-        test_tensor = dataset.testing_examples()
-        y_test = SequenceClassificationModel.__labels_from_tensors(test_tensor)
-        y_hat_test_prob = self._model.predict(test_tensor, verbose=run_verbosity)
-        y_hat_test = [list(labels).index(max(labels)) for labels in y_hat_test_prob[0]]
-        return y_test, y_hat_test
+    def get_test_ref_out_pair(self, dataset: DatasetBase, set_type='test'):
+        """
+        Get Reference and output pair for the selected test set
+        """
+        ref_lst = [SequenceClassificationModel.__to_list(index)[0] for index in self.get_test_ref_labels(dataset, set_type)]  # FIXME for now take the first index, deal with mutlilabel case
+        return ref_lst, self.get_test_out_labels(dataset, set_type)
     
-    def evaluate(self, dataset: DatasetBase):
-        y_test, y_hat_test = self._get_test_output(dataset)
+    def get_test_ref_labels(self, dataset: DatasetBase, set_type='test'):
+        if dataset not in self.__y_test_cache:
+            test_tensor = SequenceClassificationModel.__get_set(dataset, set_type)
+            self.__y_test_cache[dataset] = SequenceClassificationModel.__class_index_from_tensors(test_tensor)
+        return self.__y_test_cache[dataset]
+    
+    def set_test_ref_labels(self, dataset: DatasetBase, labels_lst):
+        """
+        Alters reference labels cached corresponding to the dataset
+        :param labels_lst: Either a list of integers or a list of arrays or a list of mix
+        """
+        self.__y_test_cache[dataset] = labels_lst
+
+    def get_test_out_labels(self, dataset: DatasetBase, set_type='test'):
+        if dataset not in self.__y_hat_test_cache:
+            y_hat_test_prob = self.get_test_out_prob(dataset, set_type)
+            self.__y_hat_test_cache[dataset] = [list(labels).index(max(labels)) for labels in y_hat_test_prob]
+        return self.__y_hat_test_cache[dataset]
+    
+    def get_test_out_prob(self, dataset: DatasetBase, set_type='test'):
+        if dataset not in self.__y_hat_test_prob_cache:
+            test_tensor = SequenceClassificationModel.__get_set(dataset, set_type)
+            test_results = self._model.predict(test_tensor)
+            self.__y_hat_test_prob_cache[dataset] = SequenceClassificationModel.normalize_tf(test_results.logits)
+        return self.__y_hat_test_prob_cache[dataset]
+
+    @staticmethod
+    def __get_set(dataset: DatasetBase, set_type: str):
+        """
+        param set_type: can be either test for test set, dev/val for validation set
+        """
+        if set_type == 'test':
+            return dataset.testing_examples()
+        elif set_type == 'dev' or set_type == 'val':
+            return dataset.validation_examples()
+        else:
+            raise ValueError('Unexpected set type {}'.format(set_type))
+    
+    def reset_cached_test_output(self):
+        self.__y_test_cache = {}
+        self.__y_hat_test_cache = {}
+        self.__y_hat_test_prob_cache = {}
+    
+    def evaluate(self, dataset: DatasetBase, set_type='test'):
+        y_test, y_hat_test = self.get_test_ref_out_pair(dataset, set_type)
 
         fscore = metrics.f1_score(y_test, y_hat_test, average='macro')
         accuracy = metrics.accuracy_score(y_test, y_hat_test)
@@ -201,20 +248,35 @@ class SequenceClassificationModel(HFModel):
         self._model_params_dict['evaluation'] = result_dict
         return result_dict
     
-    def evaluate_detailed(self, dataset: DatasetBase):
-        y_test, y_hat_test = self._get_test_output(dataset)
+    def evaluate_detailed(self, dataset: DatasetBase, set_type='test'):
+        y_test, y_hat_test = self.get_test_ref_out_pair(dataset, set_type)
         return metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names(), output_dict=True)
     
-    def confusion_matrix(self, dataset: DatasetBase):
-        y_test, y_hat_test = self._get_test_output(dataset)
-        return metrics.confusion_matrix(y_test, y_hat_test)
+    def confusion_matrix(self, dataset: DatasetBase, normalize=None, set_type='test'):
+        """
+        Generate Confusion Matrix
+        dataset: dataset to get the test samples from
+        normalize: passed on to sklearn confusion matrix. Recommeneded either 'all' or None
+        """
+        y_test, y_hat_test = self.get_test_ref_out_pair(dataset, set_type)
+        return metrics.confusion_matrix(y_test, y_hat_test, normalize=normalize)
 
-    def predict(self, text):
-        probs_np = self._model.predict(text)
-        return [list(sample_prob_lst) for sample_prob_lst in probs_np[0]]
+    @staticmethod # TEMP
+    def normalize(probs):
+        prob_factor = 1 / sum(probs)
+        return [prob_factor * p for p in probs]
     
     @staticmethod
-    def __labels_from_tensors(tensor):
+    def normalize_tf(logits):
+        return tf.nn.softmax(logits).numpy()
+    
+    def predict(self, text_str):
+        results = self._model.predict(text_str)
+        probs_np = SequenceClassificationModel.normalize_tf(results.logits)[0]
+        return probs_np
+    
+    @staticmethod
+    def __class_index_from_tensors(tensor):
         return list(np.concatenate([y for x,y in tensor], axis=0)) # for this to work tensor needs to be batched
         # return [y.numpy() for x,y in tensor_no_batch]
 
@@ -224,6 +286,131 @@ class SequenceClassificationModel(HFModel):
 
     def is_loaded_from_disk(self):
         return self._loaded_from_disk
+    
+    def precision_recall_curves(self, dataset: DatasetBase):
+        class_count = dataset.class_count()
+        y_out_prob = self.get_test_out_prob(dataset)
+        y_ref = self.get_test_ref_labels(dataset)
+        y_ref_onehot = np.array([SequenceClassificationModel._to_one_hot(index, class_count) for index in y_ref])
+        
+        precision_dict, recall_dict, threshold_dict, average_precision_dict = SequenceClassificationModel.precision_recall_curve_per_class(y_ref_onehot, y_out_prob, dataset.class_names())
+        precision_dict['micro'], recall_dict['micro'], threshold_dict['micro'], average_precision_dict['micro'] = SequenceClassificationModel.precision_recall_curve_micro_average(y_ref_onehot, y_out_prob, class_count)
+        precision_dict['macro'], recall_dict['macro'], threshold_dict['macro'], average_precision_dict['macro'] = SequenceClassificationModel.precision_recall_curve_macro_average(y_ref_onehot, y_out_prob, class_count)
+
+        return precision_dict, recall_dict, threshold_dict, average_precision_dict
+
+    @staticmethod
+    def precision_recall_curve_per_class(y_ref_onehot, y_out_prob, class_labels_lst):
+        precision_dict = {}
+        recall_dict = {}
+        threshold_dict = {}
+        average_precision_dict = {}
+
+        for i in range(len(class_labels_lst)):
+            label_str = class_labels_lst[i]
+            y_out_prob_adjusted = SequenceClassificationModel.unpicked_to_zero(y_out_prob, i)
+            precision_dict[label_str], recall_dict[label_str], threshold_dict[label_str] = metrics.precision_recall_curve(y_ref_onehot[:,i], y_out_prob_adjusted)
+            average_precision_dict[label_str] = metrics.average_precision_score(y_ref_onehot[:,i], y_out_prob_adjusted)
+        
+        return precision_dict, recall_dict, threshold_dict, average_precision_dict
+    
+    @staticmethod
+    def precision_recall_curve_micro_average(y_ref_onehot, y_out_prob, class_count): # FIXME needs to consistent with other curves computation method (supress non picked instances)
+        precision, recall, thresholds = metrics.precision_recall_curve(y_ref_onehot.ravel(), y_out_prob.ravel())
+        average_precision = metrics.average_precision_score(y_ref_onehot, y_out_prob, average='micro')
+        return precision, recall, thresholds, average_precision        
+
+    @staticmethod
+    def _to_one_hot(index, class_count):
+        """
+        Creates one hot arrays corresponding to the passed indexes
+        :param index: a single int index or an array of int indexes
+        """
+        index = SequenceClassificationModel.__to_list(index)
+        a_lst = np.zeros(class_count, dtype=int)
+        for i in index:
+            a_lst[i] = 1
+        return a_lst
+    
+    @staticmethod
+    def __to_list(value):
+        if type(value) != list:
+            value = [value]
+        return value
+
+    @staticmethod
+    def generate_prob_thresholds(prob_matrix, count=100):
+        return np.linspace(0, 1, count)
+        
+    @staticmethod
+    def to_binary_result(prob_matrix, class_index, threshold): # TODO use unpicked_to_zero function
+        """
+        Transforms probability results to binary. Class is marked as 1
+        if it is the max class and above the threshold
+        """
+        max_index_value_pair_lst = []
+        for example_result_arr in prob_matrix:
+            max_value = max(example_result_arr)
+            max_index = list(example_result_arr).index(max_value)
+            max_index_value_pair_lst.append((max_index, max_value))
+        return [1 if index_value_pair[0] == class_index and index_value_pair[1] >= threshold else 0 for index_value_pair in max_index_value_pair_lst]
+
+    @staticmethod
+    def unpicked_to_zero(prob_matrix, class_index):
+        """
+        Returns a new array with values other than the maximum reset to zero
+        """
+        class_values_lst = []
+        for example_result_arr in prob_matrix:
+            max_value = max(example_result_arr)
+            max_index = list(example_result_arr).index(max_value)
+            value = max_value if max_index == class_index else 0
+            class_values_lst.append(value)
+        return np.array(class_values_lst)
+
+    @staticmethod
+    def precision_recall_curve_per_class_at_thresholds(ref_matrix, out_matrix, class_count, threshold_lst=None):
+        """
+        Calculates the precision and recall for each class at specified thresholds for all classes
+        params:
+        - ref_matrix: Array of examples, for each example a one hot encoded label class
+        - out_matrix: Array of examples, for each example the probability for each class for the given example
+        - class_count: number of classes
+        - threshold_lst: thresholds to compute precision and recall for each
+        returns:
+        - precision: Numpy Array for each class. Each element in that array has an array of
+        precision values for each threshold
+        - Recall: same as precision but for recall
+        - threshold: threshold used in calculating these values
+        """
+        if not threshold_lst:
+            threshold_lst = SequenceClassificationModel.generate_prob_thresholds(out_matrix)
+        precision_matrix = [[] for _ in range(class_count)]
+        recall_matrix = [[] for _ in range(class_count)]
+        for class_index in range(class_count):
+            precision_lst = [[] for _ in range(len(threshold_lst))]
+            recall_lst = [[] for _ in range(len(threshold_lst))]
+            for index, threshold in enumerate(threshold_lst):
+                ref_lst = ref_matrix[:,class_index]
+                out_lst = SequenceClassificationModel.to_binary_result(out_matrix, class_index, threshold) # precision_score takes exact label
+                precision_lst[index] = metrics.precision_score(ref_lst, out_lst)
+                recall_lst[index] = metrics.recall_score(ref_lst, out_lst)
+            precision_matrix[class_index] = precision_lst
+            recall_matrix[class_index] = recall_lst
+        return np.array(precision_matrix), np.array(recall_matrix), np.array(threshold_lst)
+
+    @staticmethod
+    def column_average(value_matrix):
+        return np.average(value_matrix, axis=0) # over thresholds
+    
+    @staticmethod
+    def precision_recall_curve_macro_average(y_ref_onehot, y_out_prob, class_count):
+        precision_matrix, recall_matrix, threshold_lst = SequenceClassificationModel.precision_recall_curve_per_class_at_thresholds(y_ref_onehot, y_out_prob, class_count)
+        precision_lst = SequenceClassificationModel.column_average(precision_matrix)
+        recall_lst = SequenceClassificationModel.column_average(recall_matrix)
+        precision_average = sum(precision_lst) / len(precision_lst)
+        # to be consistent with sklearn return values append 1 to precision and 0 to recall https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_curve.html
+        return np.append(precision_lst, 1), np.append(recall_lst, 0), threshold_lst, precision_average
 
 
 class BertSequenceClassification(SequenceClassificationModel):

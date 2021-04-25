@@ -4,11 +4,16 @@ import json
 import csv
 from random import Random
 import string
+from typing import List
+import pandas as pd
+from sklearn import metrics
 
 from phd_utils import global_config
 from phd_utils.providers import Provider, PassThroughProvider
 
+
 DISABLE_TQDM = False
+
 
 class DatasetBase(ABC):
 
@@ -138,6 +143,9 @@ class RandomTextDataset(DatasetBase):
 
     def class_count(self):
         return self.__class_count
+    
+    def class_names(self):
+        return [str(i) for i in range(self.__class_count)]
 
     @staticmethod
     def __generate_random_class_labels(rand_obj, sample_count, class_count):
@@ -458,82 +466,6 @@ class AGNews(LocalDatasetWithOptionalValidation):
         return 4
 
 
-class UrbanDictWithLiwcCategoryMapper:
-
-    def __init__(self, mappings_dict):
-        self.__mappings_dict = mappings_dict
-    
-    def map_to_first_liwc_cat(self, dataframe_pd, filter_empty=True):
-        """
-        Map LIWC categories list to the first category found
-        """
-        new_dataframe_pd = dataframe_pd.copy()
-        new_dataframe_pd['liwc'] = dataframe_pd['liwc'].apply(lambda liwc_cats_str: self.__use_first_liwc_category(liwc_cats_str))
-        if filter_empty:
-            new_dataframe_pd = new_dataframe_pd[~new_dataframe_pd['liwc'].str.fullmatch('^$')]
-        return new_dataframe_pd
-
-    def __use_first_liwc_category(self, liwc_cats_str: str) -> str:
-        liwc_cats_str = str(liwc_cats_str)
-        cats_lst = liwc_cats_str.split('|')
-        for cat_str in cats_lst:
-            if cat_str in self.__mappings_dict:
-                return self.__mappings_dict[cat_str] # pick the first one
-        return ""
-
-    MAPPING_14CLASS_dict = {
-        'affect': 'affect',
-        'posemo': 'affect',
-        'negemo': 'affect',
-        'anx': 'affect',
-        'anger': 'affect',
-        'sad': 'affect',
-        'social': 'social',
-        'family': 'social',
-        'friend': 'social',
-        'female': 'social',
-        'male': 'social',
-        'cogproc': 'cogproc',
-        'insight': 'cogproc',
-        'cause': 'cogproc',
-        'discrep': 'cogproc',
-        'tentat': 'cogproc',
-        'certain': 'cogproc',
-        'differ': 'cogproc',
-        'percept': 'percept',
-        'see': 'percept',
-        'hear': 'percept',
-        'feel': 'percept',
-        'bio': 'bio',
-        'body': 'bio',
-        'health': 'bio',
-        'sexual': 'bio',
-        'ingest': 'bio',
-        'drives': 'drives',
-        'affiliation': 'drives',
-        'achiev': 'drives',
-        'power': 'drives',
-        'reward': 'drives',
-        'risk': 'drives',
-        'relativ': 'relativ',
-        'motion': 'relativ',
-        'space': 'relativ',
-        'time': 'relativ',
-        'work': 'work',
-        'leisure': 'leisure',
-        'home': 'home',
-        'money': 'money',
-        'relig': 'relig',
-        'death': 'death',
-        'informal': 'informal',
-        'swear': 'informal',
-        'netspeak': 'informal',
-        'assent': 'informal',
-        'nonflu': 'informal',
-        'filler': 'informal'
-    }
-
-
 class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
 
     def __init__(self, valid_prcnt, config_dict=None):
@@ -549,9 +481,10 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             config_dict = {}
         set_if_not_set('labels', 'liwc14') # liwc14
         set_if_not_set('train_type', 'exact') # exact, all
-        set_if_not_set('selection_mode', 'top1') # all, top1, top10, mindiff1, mindiff10
+        set_if_not_set('selection_mode', 'top1')
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
         set_if_not_set('eval_mode', 'single') # single, any
+        set_if_not_set('target_labels_count', 'single') # single, multiple
         return config_dict
     
     def get_path(self):
@@ -574,7 +507,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             return '{} {}'.format(row_lst[4], row_lst[5])
         elif self._config_dict['text_mode'] == 'definition':
             return row_lst[4]
-        elif self._config_dict['text_mode'] == 'exmple':
+        elif self._config_dict['text_mode'] == 'example':
             return row_lst[5]
         else:
             raise ValueError('Unexpected mode {}'.format(self._config_dict['text_mode']))
@@ -585,9 +518,14 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         else:
             raise ValueError('Missing or unknown labels type')
     
-    def _label_to_index(self, label_str:str):
-        label_str = label_str.upper()
-        return self.class_names().index(label_str)
+    def _label_to_index(self, label_str_lst:str):
+        label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_str_lst.split("|")]
+        if self._config_dict['target_labels_count'] == 'single':
+            return label_index_lst[0]
+        elif self._config_dict['target_labels_count'] == 'multiple':
+            return label_index_lst
+        else:
+            raise ValueError('Unknown target labels count configuration {}'.format(self._config_dict['target_labels_count']))
     
     def class_count(self):
         return len(self.class_names())
@@ -601,6 +539,8 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         set_if('liwc14', 'exact', 'top10', 11633)
         set_if('liwc14', 'exact', 'mindiff1', 22354)
         set_if('liwc14', 'exact', 'mindiff10', 11174)
+        set_if('liwc14', 'exact', 'top10multiple', 15088)
+        set_if('liwc14', 'exact', 'mindiff10multiple', 15754)
         set_if('liwc14', 'exact', 'all', 51332)
 
         set_if('liwc14', 'all', 'all', 369153)

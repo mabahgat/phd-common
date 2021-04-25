@@ -1,5 +1,6 @@
 import pkgutil
 from unittest import TestLoader, TextTestRunner, TestSuite
+import os
 
 from phd_utils import test
 
@@ -20,11 +21,9 @@ def run_all():
 
 
 def run_single():
-    from phd_utils.test.test_config import TestConfig
-    tests_lst = [
-        TestConfig('test_get_attribute'),
-        TestConfig('test_get_item'),
-        TestConfig('test_mix')
+    from phd_utils.test.test_models_v2 import TestBertSequenceClassification
+    tests_lst = [    
+        TestBertSequenceClassification('test_precision_recall_curve')
     ]
     test_suite = TestSuite()
     test_suite.addTests(tests_lst)
@@ -33,4 +32,7 @@ def run_single():
 
 if __name__ == '__main__':
     before()
-    run_single()
+    if 'TEST_TYPE' in os.environ and os.environ['TEST_TYPE'] == 'single':
+        run_single()
+    else:
+        run_all()
