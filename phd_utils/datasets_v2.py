@@ -497,18 +497,18 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         }
     
     def _file_sys_load(self, set_type_str: str):
-        records_lst = LocalDatasetBase.load_csv(self.get_path()[set_type_str], quoting=csv.QUOTE_ALL)[1:] # skip title
-        data_lst = [[self._create_input_text(row), self._label_to_index(row[-1])] for row in tqdm(records_lst, desc='processing records', disable=DISABLE_TQDM)]
-        x_tuple, y_tuple = zip(*data_lst)
-        return list(x_tuple), list(y_tuple)
+        content_df = pd.read_csv(self.get_path()[set_type_str], index_col=0)
+        x_tuple = self._create_input_text_from_dataframe(content_df)
+        y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self._label_to_index(label_str))
+        return x_tuple, y_tuple
     
-    def _create_input_text(self, row_lst):
+    def _create_input_text_from_dataframe(self, content_df):
         if self._config_dict['text_mode'] == 'merge':
-            return '{} {}'.format(row_lst[4], row_lst[5])
+            return (content_df['meaning'].astype(str) + ' ' + content_df['example'].astype(str)).to_list()
         elif self._config_dict['text_mode'] == 'definition':
-            return row_lst[4]
+            return content_df['meaning'].astype(str).to_list()
         elif self._config_dict['text_mode'] == 'example':
-            return row_lst[5]
+            return content_df['example'].astype(str).to_list()
         else:
             raise ValueError('Unexpected mode {}'.format(self._config_dict['text_mode']))
     
