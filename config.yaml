@@ -51,8 +51,6 @@ datasets:
     liwc14:
       exact:
         test: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
-          #single: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_test.csv
-          #multiple: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
         train:
           all: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact.csv
           top1: /home/mbahgat/ws/work/datasets/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1.csv

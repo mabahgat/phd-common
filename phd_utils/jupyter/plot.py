@@ -6,13 +6,27 @@ def plot_precision_recall_threshold_curve(precision_lst, recall_lst, title_str=N
     """
     Plots precision and recall against list of thresholds (by default from 0 to 1 with 100 steps)
     """
+    _, ax = plt.subplots()
+
+    def set_minor_ticks(start, end):
+        draw_range = np.arange(start, end + 0.1, step=0.05)
+        ax.set_xticks(draw_range, minor=True)
+        ax.set_yticks(draw_range, minor=True)
+
     if thresholds_lst is None:
         thresholds_lst = np.linspace(0, 1, len(precision_lst))
-    _, ax = plt.subplots()
+        set_minor_ticks(0, 1)
+    else:
+        start = np.amin(thresholds_lst)
+        end = np.amax(thresholds_lst)
+        set_minor_ticks(start, end)
+
     ax.plot(thresholds_lst, precision_lst, label='Precision')
     ax.plot(thresholds_lst, recall_lst, label='Recall')
     ax.set_xlabel('Threshold')
     ax.set_ylabel('Precision/Recall')
+    ax.grid(which='major')
+    ax.grid(which='minor', linestyle='--')
     if title_str:
         ax.set_title(title_str)
     ax.legend()
