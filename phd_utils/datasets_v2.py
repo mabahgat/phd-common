@@ -489,7 +489,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
                 config_dict[name_str] = value
         if not config_dict:
             config_dict = {}
-        set_if_not_set('labels', 'liwc14') # liwc14
+        set_if_not_set('labels', 'liwc14') # liwc14, liwc_emo
         set_if_not_set('train_type', 'exact') # exact, all
         set_if_not_set('selection_mode', 'top1')
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
@@ -502,7 +502,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         Return data files path
         """
         return {
-            'test': global_config.datasets.ud_liwc.liwc14.exact.test,
+            'test': global_config.datasets.ud_liwc[self._config_dict['labels']].exact.test,
             'train': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']]
         }
     
@@ -523,10 +523,8 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             raise ValueError('Unexpected mode {}'.format(self._config_dict['text_mode']))
     
     def class_names(self):
-        if self._config_dict['labels'] == 'liwc14':
-            return ['WORK', 'AFFECT', 'BIO', 'RELIG', 'RELATIV', 'PERCEPT', 'INFORMAL', 'LEISURE', 'DRIVES', 'SOCIAL', 'COGPROC', 'DEATH', 'MONEY', 'HOME']
-        else:
-            raise ValueError('Unexpected label type {}'.format(self._config_dict['labels']))
+        labels_lst = global_config.datasets.ud_liwc[self._config_dict['labels']].labels.split(',')
+        return [label_str.upper() for label_str in labels_lst]
     
     def _label_to_index(self, label_str_lst:str):
         label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_str_lst.split("|")]
@@ -555,6 +553,11 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
 
         set_if('liwc14', 'all', 'all', 369153)
         set_if('liwc14', 'all', 'top1', 180263)
+
+        set_if('liwc_emo', 'exact', 'top1', 414)
+        set_if('liwc_emo', 'exact', 'mindiff1', 5289)
+        set_if('liwc_emo', 'exact', 'mindiff10', 2306)
+        set_if('liwc_emo', 'exact', 'all', 11741)
 
         if 'train' not in size_dict:
             raise ValueError('Missing or no train type')

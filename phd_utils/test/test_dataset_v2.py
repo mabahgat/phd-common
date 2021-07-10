@@ -85,3 +85,16 @@ class TestUrbanDictWithLiwc(unittest.TestCase):
         # TODO better test cases
         self.assertEqual(len(x_train), len(dataset.train_index_lst))
         self.assertEqual(len(x_valid), len(dataset.valid_index_lst))
+
+
+class TestUrbanDictWithLiwcEmo(unittest.TestCase):
+
+    def test_load(self):
+        dataset = UrbanDictWithLiwc(0.1, config_dict={'labels': 'liwc_emo'})
+        dataset.load()
+        x_train, y_train = dataset.training_examples()
+        x_valid, y_valid = dataset.validation_examples()
+
+        # TODO better test cases
+        self.assertEqual(len(x_train), len(dataset.train_index_lst))
+        self.assertEqual(len(x_valid), len(dataset.valid_index_lst))
