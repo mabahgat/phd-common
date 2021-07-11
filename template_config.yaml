@@ -1,0 +1,102 @@
+models:
+  path: <root_path>/models/phd_framework
+
+datasets:
+  clpysch:
+    task_a:
+      path:
+        train: <root_path>/jws/clpysch/data/task_A_train.posts.json
+        test: <root_path>/jws/clpysch/data/task_A_test.posts.json
+
+  affect_in_tweets:
+    path:
+      train: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-train.tsv
+      dev: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-dev.tsv
+      test: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-test.tsv
+
+  emocontext:
+    classify_emotions:
+      path:
+        train: <data_set_path>/emo_context/parts/3_class/train.tsv
+        dev: <data_set_path>/emo_context/parts/3_class/dev.tsv
+        test: <data_set_path>/emo_context/parts/3_class/test.tsv
+
+    emotions_vs_none: 
+      path:
+        train: <data_set_path>/emo_context/parts/2_class/train.tsv
+        dev: <data_set_path>/emo_context/parts/2_class/dev.tsv
+        test: <data_set_path>/emo_context/parts/2_class/test.tsv
+
+    classify_all:
+      path:
+        train: <data_set_path>/emo_context/parts/2_class/train.tsv
+        dev: <data_set_path>/emo_context/parts/2_class/dev.tsv
+        test: <data_set_path>/emo_context/parts/2_class/test.tsv
+
+
+  agnews:
+    path:
+      train: <data_set_path>/CharCnn_Keras/data/ag_news_csv/train.csv
+      test: <data_set_path>/CharCnn_Keras/data/ag_news_csv/test.csv
+
+  emonet:
+    path: <data_set_path>/emo_net/emo_net_8class.tsv
+      
+  ud_liwc_best_v1:
+    path:
+      train: <data_set_path>/urban_dict/liwc_tagged/ud_data_best_def_train.csv
+      test: <data_set_path>/urban_dict/liwc_tagged/ud_data_best_def_test.csv
+  
+  ud_liwc:
+    liwc14:
+      labels: WORK,AFFECT,BIO,RELIG,RELATIV,PERCEPT,INFORMAL,LEISURE,DRIVES,SOCIAL,COGPROC,DEATH,MONEY,HOME
+      exact:
+        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
+        train:
+          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact.csv
+          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1.csv
+          top1_tweetsamples: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetsamples.csv
+          top1_tweetSamplesDefTweetDistTop10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetSamplesDefTweetDistTop10.csv
+          top10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10.csv
+          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff1.csv
+          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10.csv
+          mindiff10_tweetsamples: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples.csv
+          mindiff10_tweetsamples_top30: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples_top30.csv
+          mindiff10_tweetSamplesDefTweetDistTop10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_minDiff10_tweetSamplesDefTweetDistTop10.csv
+          top10multiple: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10multiple.csv
+          mindiff10multiple: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10multiple.csv
+      all:
+        train: 
+          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train.csv
+          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_top1.csv
+    liwc_emo:
+      labels: AFFECT,NEGEMO,POSEMO
+      exact:
+        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_test.csv
+        train:
+          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match.csv
+          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_top1.csv
+          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_mindiff1.csv
+          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_mindiff10.csv
+    liwc_bio:
+      labels: BIO,BODY,HEALTH,SEXUAL,INGEST
+      exact:
+        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_test.csv
+        train:
+          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match.csv
+          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_top1.csv
+          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_mindiff1.csv
+          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_mindiff10.csv
+    liwc_social:
+      labels: SOCIAL,FAMILY,FRIEND,FEMALE,MALE
+      exact:
+        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_test.csv
+        train:
+          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match.csv
+          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_top1.csv
+          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_mindiff1.csv
+          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_mindiff10.csv
+    
+
+liwc:
+  path: <root_path>/resources/LIWC2015_English_Flat.dic
