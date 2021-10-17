@@ -480,6 +480,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
 
     def __init__(self, valid_prcnt, config_dict=None):
         self._config_dict = UrbanDictWithLiwc.__init_dict(config_dict)
+        self.__size_dict = None # lazy compute size and buffer
         super().__init__(valid_prcnt)
     
     @staticmethod
@@ -539,29 +540,23 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         return len(self.class_names())
     
     def size(self):
-        size_dict = { 'test': 940 }
-        def set_if(labels_str, train_type_str, selection_mode_str, value):
-            if self._config_dict['labels'] == labels_str and self._config_dict['train_type'] == train_type_str and self._config_dict['selection_mode'] == selection_mode_str:
-                size_dict['train'] = value
-        set_if('liwc14', 'exact', 'top1', 1772)
-        set_if('liwc14', 'exact', 'top10', 11633)
-        set_if('liwc14', 'exact', 'mindiff1', 22354)
-        set_if('liwc14', 'exact', 'mindiff10', 11174)
-        set_if('liwc14', 'exact', 'top10multiple', 15088)
-        set_if('liwc14', 'exact', 'mindiff10multiple', 15754)
-        set_if('liwc14', 'exact', 'all', 51332)
-
-        set_if('liwc14', 'all', 'all', 369153)
-        set_if('liwc14', 'all', 'top1', 180263)
-
-        set_if('liwc_emo', 'exact', 'top1', 414)
-        set_if('liwc_emo', 'exact', 'mindiff1', 5289)
-        set_if('liwc_emo', 'exact', 'mindiff10', 2306)
-        set_if('liwc_emo', 'exact', 'all', 11741)
-
-        if 'train' not in size_dict:
-            raise ValueError('Missing or no train type')
-        return size_dict
+        def count_lines(file_path_str):
+            return sum(1 for _ in open(file_path_str))
+        if not self.__size_dict:
+            train_size = count_lines(self.get_path()['train'])
+            test_size = count_lines(self.get_path()['test'])
+            if self._valid_prcnt:
+                valid_size = int(self._valid_prcnt * train_size)
+                train_size -= valid_size
+            else:
+                valid_size = 0
+            self.__size_dict = {
+                'train': train_size,
+                'valid': valid_size,
+                'test': test_size
+            }
+        return self.__size_dict
+        
     
     def name(self):
         config_str = '-'.join(list(self._config_dict.items()))
