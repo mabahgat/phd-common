@@ -509,9 +509,26 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
     
     def _file_sys_load(self, set_type_str: str):
         content_df = pd.read_csv(self.get_path()[set_type_str], index_col=0)
+        self._process_content_in_place(content_df)
         x_tuple = self._create_input_text_from_dataframe(content_df)
         y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self._label_to_index(label_str))
         return x_tuple, y_tuple
+
+    def _process_content_in_place(self, content_df):
+        text_mode = self._config_dict['text_mode']
+        if text_mode in set(['merge_with_tags', 'tags', 'merge_with_tags_keep_empty']):
+            content_df['tagList'] = content_df.tagList.apply(UrbanDictWithLiwc._tags_to_list)
+            if text_mode != 'merge_with_tags_keep_empty':
+                content_df = content_df[content_df.tagList.apply(lambda l: len(l) != 0)]
+            content_df['tagList'] = content_df.tagList.apply(lambda l: ' '.join(l))
+        
+    
+    @staticmethod
+    def _tags_to_list(tags_str: List[str]):
+        tags_str = str(tags_str)
+        if tags_str == 'nan':
+            return []
+        return list(filter(len, tags_str.split('#')))
     
     def _create_input_text_from_dataframe(self, content_df):
         if self._config_dict['text_mode'] == 'merge':
@@ -520,6 +537,10 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             return content_df['meaning'].astype(str).to_list()
         elif self._config_dict['text_mode'] == 'example':
             return content_df['example'].astype(str).to_list()
+        elif self._config_dict['text_mode'] == 'merge_with_tags' or self._config_dict['text_mode'] == 'merge_with_tags_keep_empty':
+            return (content_df['tagList'].astype(str) + ' ' + content_df['meaning'].astype(str) + ' ' + content_df['example'].astype(str)).to_list()
+        elif self._config_dict['text_mode'] == 'tags':
+            return content_df['tagList'].astype(str).to_list()
         else:
             raise ValueError('Unexpected mode {}'.format(self._config_dict['text_mode']))
     
