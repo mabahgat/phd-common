@@ -9,7 +9,7 @@ import tensorflow as tf
 # 'Using', physical_devices[GPU_INDEX]
 
 
-def set_gpu_to_next_available(min_memory_mb=20_000):
+def set_gpu_to_next_available(min_memory_mb=22_000):
     physical_devices_lst = tf.config.list_physical_devices('GPU')
     if not physical_devices_lst:
         raise Exception('No GPUs found')
