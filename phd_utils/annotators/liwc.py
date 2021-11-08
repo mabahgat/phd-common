@@ -13,7 +13,10 @@ def __create_strict_liwc_dict() -> Dict[str, List[str]]:
     return {remove_wild_card(key): value for key, value in liwc_en.lexicon.items()}
 
 
-liwc_en_strict_dict = __create_strict_liwc_dict()
+__liwc_en_strict_dict = __create_strict_liwc_dict()
+
+def get_liwc_en_strict_dict_copy() -> Dict[str, List[str]]:
+    return {k: v.copy() for k, v in __liwc_en_strict_dict.items()}
 
 
 def liwc_annotate_word(word_str: str) -> List[str]:
@@ -21,7 +24,7 @@ def liwc_annotate_word(word_str: str) -> List[str]:
 
 
 def liwc_annotate_word_strict(word_str: str) -> List[str]:
-    if word_str in liwc_en_strict_dict:
-        return liwc_en_strict_dict[word_str]
+    if word_str in __liwc_en_strict_dict:
+        return __liwc_en_strict_dict[word_str].copy()
     else:
         return []
