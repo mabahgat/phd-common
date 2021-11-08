@@ -71,8 +71,7 @@ class DatasetBase(ABC):
     @staticmethod
     def randomize(x_lst, y_lst, random_seed):
         zipped_lst = list(zip(x_lst, y_lst))
-        rand = Random()
-        rand.seed(random_seed)
+        rand = DatasetBase.random_with_seed(random_seed)
         rand.shuffle(zipped_lst)
         shuffled_x_lst, shuffled_y_lst = zip(*zipped_lst)
         return list(shuffled_x_lst), list(shuffled_y_lst)
@@ -88,6 +87,12 @@ class DatasetBase(ABC):
                 current = p.apply(current)
             done.append(current)
         return done
+
+    @staticmethod
+    def random_with_seed(random_seed=0):
+        rand = Random()
+        rand.seed(random_seed)
+        return rand
 
 
 class RandomTextDataset(DatasetBase):
@@ -511,7 +516,8 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         content_df = pd.read_csv(self.get_path()[set_type_str], index_col=0)
         self._process_content_in_place(content_df)
         x_tuple = self._create_input_text_from_dataframe(content_df)
-        y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self._label_to_index(label_str))
+        label_select_random = DatasetBase.random_with_seed(0)
+        y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self._label_to_index(label_str, label_select_random))
         return x_tuple, y_tuple
 
     def _process_content_in_place(self, content_df):
@@ -548,12 +554,14 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         labels_lst = global_config.datasets.ud_liwc[self._config_dict['labels']].labels.split(',')
         return [label_str.upper() for label_str in labels_lst]
     
-    def _label_to_index(self, label_str_lst:str):
-        label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_str_lst.split("|")]
+    def _label_to_index(self, label_list_str:str, rand:Random=None):
+        label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_list_str.split("|")]
         if self._config_dict['target_labels_count'] == 'single':
             return label_index_lst[0]
         elif self._config_dict['target_labels_count'] == 'multiple':
             return label_index_lst
+        elif self._config_dict['target_labels_count'] == 'single_random':
+            return rand.choice(label_index_lst)
         else:
             raise ValueError('Unexpected target labels count {}'.format(self._config_dict['target_labels_count']))
     
