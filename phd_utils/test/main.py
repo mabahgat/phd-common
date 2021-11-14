@@ -21,9 +21,22 @@ def run_all():
 
 
 def run_single():
-    from phd_utils.test.test_dataset_v2 import TestUrbanDictWithLiwc
+    from phd_utils.test.test_dataset_creators import TestLiwcCategories, TestLiwcDatasetCreator
     tests_lst = [    
-        TestUrbanDictWithLiwc('test_load')
+        TestLiwcCategories('test_add_parent_class_if_missing'),
+        TestLiwcCategories('test_map_list'),
+        TestLiwcCategories('test_map_list2'),
+        TestLiwcCategories('test_keep_lowest_cats_only'),
+        TestLiwcDatasetCreator('test_filter'),
+        TestLiwcDatasetCreator('test_filter_names'),
+        TestLiwcDatasetCreator('test_filer_stopwords'),
+        TestLiwcDatasetCreator('test_annotate'),
+        TestLiwcDatasetCreator('test_redo_categories'),
+        TestLiwcDatasetCreator('test_redo_categories2'),
+        TestLiwcDatasetCreator('test_get_raw_annotated'),
+        TestLiwcDatasetCreator('test_get_raw_not_annotated'),
+        TestLiwcDatasetCreator('test_select_for_test'),
+        TestLiwcDatasetCreator('test_select_for_train_top1')
     ]
     test_suite = TestSuite()
     test_suite.addTests(tests_lst)

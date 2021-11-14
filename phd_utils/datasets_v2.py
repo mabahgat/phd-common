@@ -495,7 +495,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
                 config_dict[name_str] = value
         if not config_dict:
             config_dict = {}
-        set_if_not_set('labels', 'liwc14') # liwc14, liwc_emo
+        set_if_not_set('labels', 'liwc_root_10') # liwc_root_10, liwc_affect_3 ...
         set_if_not_set('train_type', 'exact') # exact, all
         set_if_not_set('selection_mode', 'top1')
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
@@ -508,7 +508,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         Return data files path
         """
         return {
-            'test': global_config.datasets.ud_liwc[self._config_dict['labels']].exact.test,
+            'test': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']],
             'train': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']]
         }
     
@@ -528,7 +528,6 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
                 content_df = content_df[content_df.tagList.apply(lambda l: len(l) != 0)]
             content_df['tagList'] = content_df.tagList.apply(lambda l: ' '.join(l))
         
-    
     @staticmethod
     def _tags_to_list(tags_str: List[str]):
         tags_str = str(tags_str)
