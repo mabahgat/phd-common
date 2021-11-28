@@ -99,9 +99,21 @@ class LiwcCategories:
 
     def map_list(self, cat_lst: List[str], empty_value=None) -> List[str]:
         """
-        maps the list of categories to the ones used
+        Maps the list of categories to the ones used by this instance. A child
+        category is mapped to an included parent category.
+        :return: categories that matched included ones in this instance maintaining
+            their order.
         """
-        return [c for c in cat_lst if c in self.__include_set]
+        found_lst = []
+        for cat_str in cat_lst:
+            while cat_str is not None:
+                if cat_str in self.__include_set:
+                    if cat_str not in found_lst:
+                        found_lst.append(cat_str)
+                    break
+                else:
+                    cat_str = LiwcCategories.ORG_HIERARCHY_dict[cat_str]
+        return found_lst
     
     @staticmethod
     def get_head_classes() -> Set[str]:
@@ -137,11 +149,13 @@ class LiwcCategories:
         For every category in the list remove it if there's a child category
         """
         to_remove_idx_set = set()
+        cat_set = set(cat_lst)
         for cat_str in cat_lst:
             parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[cat_str]
             while parent_cat_str is not None:
-                idx = cat_lst.index(parent_cat_str) # expected that parent will always exist
-                to_remove_idx_set.add(idx)
+                if parent_cat_str in cat_set:
+                    idx = cat_lst.index(parent_cat_str) # expected that parent will always exist
+                    to_remove_idx_set.add(idx)
                 parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[parent_cat_str]
         for idx in sorted(to_remove_idx_set, reverse=True):
             del cat_lst[idx]
@@ -268,8 +282,10 @@ class LiwcDatasetCreator:
         if minDiff:
             annotated_df = annotated_df[annotated_df.diffLikes >= minDiff]
         
+        annotated_df['liwc'] = annotated_df.liwc.apply(LiwcCategories.keep_lowest_cats_only)
+        
         self.__train_df = annotated_df
-        return len(annotated_df)
+        return len(self.__train_df)
 
     def __filter_out_test_patterns(self, content_df: pd.DataFrame) -> pd.DataFrame:
         if self.__test_df is None:
@@ -321,7 +337,7 @@ class LiwcDatasetCreator:
         for cat_str, count_needed_int in counts_dict.items():
             selected_df = best_entry_per_word_df[best_entry_per_word_df.liwc.apply(lambda liwc_lst: cat_str in liwc_lst)].head(count_needed_int)
             selected_df_lst.append(selected_df)
-            best_entry_per_word_df.drop(selected_df.index)
+            best_entry_per_word_df.drop(selected_df.index, inplace=True)
         
         self.__test_df = pd.concat(selected_df_lst)
         return len(self.__test_df)
@@ -530,7 +546,7 @@ class LiwcDatasetCreator:
 
     @staticmethod
     def doWriteOrThrow(path_str: str, overwrite_b, ignore_b):
-        if ignore_b or not Path(path_str).exists():
+        if overwrite_b or ignore_b or not Path(path_str).exists():
             return True
         else:
             if not overwrite_b:
@@ -548,17 +564,25 @@ def __liwc_cats_for_all() -> LiwcCategories:
 
 
 def __liwc_cats_for_roots() -> LiwcCategories:
-    root_cats_set = set(['affect', 'bio', 'cogproc', 'drives', 'informal', 'negemo', 'pconcern', 'percept', 'relativ', 'social'])
+    root_cats_set = set(['affect', 'social', 'cogproc', 'percept', 'bio', 'drives', 'relativ', 'pconcern', 'informal'])
     return LiwcCategories(root_cats_set)
 
 
-def __liwc_cats_for_affect() -> LiwcCategories:
+def __liwc_cats_for_affect_3() -> LiwcCategories:
     social_cats_set = set(['affect', 'posemo', 'negemo'])
     return LiwcCategories(social_cats_set)
 
+def __liwc_cats_for_affect_2() -> LiwcCategories:
+    social_cats_set = set(['posemo', 'negemo'])
+    return LiwcCategories(social_cats_set)
 
-def __liwc_cats_for_social() -> LiwcCategories:
+
+def __liwc_cats_for_social_5() -> LiwcCategories:
     social_cats_set = set(['social', 'family', 'friend', 'female', 'male'])
+    return LiwcCategories(social_cats_set)
+
+def __liwc_cats_for_social_3() -> LiwcCategories:
+    social_cats_set = set(['social', 'family', 'friend'])
     return LiwcCategories(social_cats_set)
 
 
@@ -620,28 +644,37 @@ def create_liwc_datasets():
     dataset.annotate(annotation_type_str='strict')
     dataset.redo_categories(__liwc_cats_for_all())
     dataset.select_for_test(count=1000)
-    dataset.save_test(root_path / 'liwc_root-10_test-top1-1000.csv', overwrite_b=True)
+    dataset.save_test(root_path / 'liwc_all_test-top1-1000.csv', overwrite_b=True)
     dataset.select_for_train() # select everything other than the testset
 
+    
     print('Creating root')
-    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-10')
-    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-10')
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-9')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-9')
 
-    print('Creating affect')
-    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_affect(), root_path=root_path, prefix_str='liwc_affect-3')
-    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_affect(), root_path=root_path, prefix_str='liwc_affect-3')
+    print('Creating affect - 3 class: {}'.format(__liwc_cats_for_affect_3()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_affect_3(), root_path=root_path, prefix_str='liwc_affect-3')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_affect_3(), root_path=root_path, prefix_str='liwc_affect-3')
 
-    print('Creating social')
-    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_social(), root_path=root_path, prefix_str='liwc_social-5')
-    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_social(), root_path=root_path, prefix_str='liwc_social-5')
+    print('Creating affect - 2 class: {}'.format(__liwc_cats_for_affect_2()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_affect_2(), root_path=root_path, prefix_str='liwc_affect-2')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_affect_2(), root_path=root_path, prefix_str='liwc_affect-2')
 
+    print('Creating social -  5 class: {}'.format(__liwc_cats_for_social_5()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_social_5(), root_path=root_path, prefix_str='liwc_social-5')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_social_5(), root_path=root_path, prefix_str='liwc_social-5')
+
+    print('Creating social -  3 class: {}'.format(__liwc_cats_for_social_3()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_social_3(), root_path=root_path, prefix_str='liwc_social-3')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_social_3(), root_path=root_path, prefix_str='liwc_social-3')
+    
     print('Creating bio')
     __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_bio(), root_path=root_path, prefix_str='liwc_bio-5')
     __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_bio(), root_path=root_path, prefix_str='liwc_bio-5')
 
     print('Creating personal concerns')
-    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconern-7')
-    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconern-7')
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
 
     print('Done!')
 
