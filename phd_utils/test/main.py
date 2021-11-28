@@ -26,6 +26,7 @@ def run_single():
         TestLiwcCategories('test_add_parent_class_if_missing'),
         TestLiwcCategories('test_map_list'),
         TestLiwcCategories('test_map_list2'),
+        TestLiwcCategories('test_map_list_parents'),
         TestLiwcCategories('test_keep_lowest_cats_only'),
         TestLiwcDatasetCreator('test_filter'),
         TestLiwcDatasetCreator('test_filter_names'),
