@@ -1,5 +1,6 @@
 import subprocess
 import tensorflow as tf
+import time
 
 # GPU_INDEX = 3
 
@@ -9,7 +10,7 @@ import tensorflow as tf
 # 'Using', physical_devices[GPU_INDEX]
 
 
-def set_gpu_to_next_available(min_memory_mb=22_000):
+def __get_next_free_gpu(min_memory_mb):
     physical_devices_lst = tf.config.list_physical_devices('GPU')
     if not physical_devices_lst:
         raise Exception('No GPUs found')
@@ -26,10 +27,37 @@ def set_gpu_to_next_available(min_memory_mb=22_000):
             gpu_index = idx
             break
     if gpu_index == -1:
-        raise Exception('Could not find a gpu with free memory of {} out of {} gpus'.format(min_memory_mb, len(memory_lst)))
+        return None, memory_lst
+    else:
+        return physical_devices_lst[gpu_index], memory_lst
 
-    tf.config.set_visible_devices(physical_devices_lst[gpu_index:], 'GPU')
-    return physical_devices_lst[gpu_index]
+
+def set_gpu_to_next_available(min_memory_mb=22_000):
+    gpu, memory_lst = __get_next_free_gpu(min_memory_mb=min_memory_mb)
+    if gpu is None:
+        raise Exception('Could not find a gpu with free memory of {} MB. Current mem status (MB): {}'.format(min_memory_mb, len(memory_lst)))
+
+    tf.config.set_visible_devices(gpu, 'GPU')
+    return gpu
+
+
+def wait_and_set_gpu_to_nex_available(min_memory_mb=22_000, wait_in_sec=60, timeout_trails_int=None, log_b=True):
+    gpu = None
+    attempts = 0
+    while gpu is None:
+        gpu, memory_lst = __get_next_free_gpu(min_memory_mb=min_memory_mb)
+        if gpu is None:
+            if timeout_trails_int and attempts > timeout_trails_int:
+                raise Exception('Failed to get a free GPU after {} attempts. Requested {} MB. Current mem status (MB): {}'.format(attempts, min_memory_mb, memory_lst))
+            time.sleep(wait_in_sec)
+            attempts += 1
+            if log_b:
+                t = time.localtime()
+                t_str = time.strftime("%H:%M:%S", t)
+                print('{}: Attempt {} Still waiting for an available gpu with memory {} MB. Current mem status (MB): {}'.format(t_str, attempts, min_memory_mb, memory_lst))
+    if gpu:
+        tf.config.set_visible_devices(gpu, 'GPU') 
+    return gpu
 
 
 if __name__ == '__main__':
