@@ -38,10 +38,19 @@ class TestLiwcCategories(unittest.TestCase):
         for l in ll:
             self.assertNotEqual(len(cats.map_list(l)), 0)
     
+    def test_map_list_parents(self):
+        c = LiwcCategories(set(['affect']))
+        r = c.map_list(['posemo'])
+        self.assertListEqual(['affect'], r)
+    
     def test_keep_lowest_cats_only(self):
         input_lst = ['function', 'pronoun', 'ppron', 'bio', 'social', 'male', 'pconcern', 'work']
         new_lst = LiwcCategories.keep_lowest_cats_only(input_lst)
         self.assertListEqual(['ppron', 'bio', 'male', 'work'], new_lst)
+
+        input_lst = ['affect', 'posemo']
+        new_lst = LiwcCategories.keep_lowest_cats_only(input_lst)
+        self.assertListEqual(['posemo'], new_lst)
 
 
 class TestLiwcDatasetCreator(unittest.TestCase):
