@@ -303,9 +303,10 @@ class LiwcDatasetCreator:
 
         return content_df[~content_df.word.apply(matches_a_test_entry)]
     
-    def select_for_test(self, count: int=None, min_class_count: int=None, distribution_method_str: str='ud_word') -> int:
+    def select_for_test(self, count: int=None, min_class_count: int=None, distribution_method_str: str='ud_word', min_diff_int: int=None, samples_per_word_int: int=1) -> int:
         """
         :param count: count has to be at least equal to the number of categories
+        :returns: Number of samples actually selected. To retreive the actuall test set call get_test_set
         """
         if not count and not min_class_count:
             raise ValueError('Either count for min_class_count needs to be specified')
@@ -331,7 +332,9 @@ class LiwcDatasetCreator:
 
         annotated_df = self.get_raw_annotated()
         annotated_df['liwc'] = annotated_df.liwc.apply(LiwcCategories.keep_lowest_cats_only) # match distribution
-        best_entry_per_word_df = annotated_df.sort_values(by='diffLikes', ascending=False).groupby('word', as_index=False).first().sample(frac=1, random_state=0)
+        if min_diff_int is not None:
+            annotated_df = annotated_df[annotated_df.diffLikes > min_diff_int]
+        best_entry_per_word_df = annotated_df.sort_values(by='diffLikes', ascending=False).groupby('word', as_index=False).head(n=1).sample(frac=1, random_state=0)
         
         selected_df_lst = []
         for cat_str, count_needed_int in counts_dict.items():
@@ -643,11 +646,10 @@ def create_liwc_datasets():
     dataset.filter_stopwords()
     dataset.annotate(annotation_type_str='strict')
     dataset.redo_categories(__liwc_cats_for_all())
-    dataset.select_for_test(count=1000)
+    dataset.select_for_test(count=1000, samples_per_word_int=1)
     dataset.save_test(root_path / 'liwc_all_test-top1-1000.csv', overwrite_b=True)
     dataset.select_for_train() # select everything other than the testset
 
-    
     print('Creating root')
     __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-9')
     __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_roots(), root_path=root_path, prefix_str='liwc_root-9')
@@ -675,7 +677,7 @@ def create_liwc_datasets():
     print('Creating personal concerns')
     __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
     __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
-
+    
     print('Done!')
 
 
