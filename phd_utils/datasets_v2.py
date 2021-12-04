@@ -495,7 +495,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
                 config_dict[name_str] = value
         if not config_dict:
             config_dict = {}
-        set_if_not_set('labels', 'liwc_root_10') # liwc_root_10, liwc_affect_3 ...
+        set_if_not_set('labels', 'liwc_root_9') # liwc_root_9, liwc_affect_3 ...
         set_if_not_set('train_type', 'exact') # exact, all
         set_if_not_set('selection_mode', 'top1')
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
@@ -508,7 +508,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         Return data files path
         """
         return {
-            'test': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']],
+            'test': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].test,
             'train': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']]
         }
     
@@ -551,10 +551,10 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
     
     def class_names(self):
         labels_lst = global_config.datasets.ud_liwc[self._config_dict['labels']].labels.split(',')
-        return [label_str.upper() for label_str in labels_lst]
+        return [label_str for label_str in labels_lst]
     
     def _label_to_index(self, label_list_str:str, rand:Random=None):
-        label_index_lst = [self.class_names().index(label_str.upper()) for label_str in label_list_str.split("|")]
+        label_index_lst = [self.class_names().index(label_str) for label_str in label_list_str.split("|")] #FIXME - avoid using different casing
         if self._config_dict['target_labels_count'] == 'single':
             return label_index_lst[0]
         elif self._config_dict['target_labels_count'] == 'multiple':

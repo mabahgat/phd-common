@@ -185,7 +185,7 @@ class SequenceClassificationModel(HFModel):
 
         return history
     
-    def get_test_ref_out_pair(self, dataset: DatasetBase, set_type='test'):
+    def get_test_ref_out_pair(self, dataset: DatasetBase, set_type: str='test'):
         """
         Get Reference and output pair for the selected test set
         """
@@ -198,20 +198,20 @@ class SequenceClassificationModel(HFModel):
             self.__y_test_cache[(dataset, set_type)] = SequenceClassificationModel.__class_index_from_tensors(test_tensor)
         return self.__y_test_cache[(dataset, set_type)]
     
-    def set_test_ref_labels(self, dataset: DatasetBase, labels_lst, set_type='test'):
+    def set_test_ref_labels(self, dataset: DatasetBase, labels_lst, set_type: str='test'):
         """
         Alters reference labels cached corresponding to the dataset
         :param labels_lst: Either a list of integers or a list of arrays or a list of mix
         """
         self.__y_test_cache[(dataset, set_type)] = labels_lst
 
-    def get_test_out_labels(self, dataset: DatasetBase, set_type='test'):
+    def get_test_out_labels(self, dataset: DatasetBase, set_type: str='test'):
         if (dataset, set_type) not in self.__y_hat_test_cache:
             y_hat_test_prob = self.get_test_out_prob(dataset, set_type)
             self.__y_hat_test_cache[(dataset, set_type)] = [list(labels).index(max(labels)) for labels in y_hat_test_prob]
         return self.__y_hat_test_cache[(dataset, set_type)]
     
-    def get_test_out_prob(self, dataset: DatasetBase, set_type='test'):
+    def get_test_out_prob(self, dataset: DatasetBase, set_type: str='test'):
         if (dataset, set_type) not in self.__y_hat_test_prob_cache:
             test_tensor = SequenceClassificationModel.__get_set(dataset, set_type)
             test_results = self._model.predict(test_tensor)
@@ -235,7 +235,7 @@ class SequenceClassificationModel(HFModel):
         self.__y_hat_test_cache = {}
         self.__y_hat_test_prob_cache = {}
     
-    def evaluate(self, dataset: DatasetBase, set_type='test'):
+    def evaluate(self, dataset: DatasetBase, set_type: str='test'):
         y_test, y_hat_test = self.get_test_ref_out_pair(dataset, set_type)
 
         fscore = metrics.f1_score(y_test, y_hat_test, average='macro')
@@ -248,7 +248,7 @@ class SequenceClassificationModel(HFModel):
         self._model_params_dict['evaluation'] = result_dict
         return result_dict
     
-    def evaluate_detailed(self, dataset: DatasetBase, set_type='test'):
+    def evaluate_detailed(self, dataset: DatasetBase, set_type: str='test'):
         y_test, y_hat_test = self.get_test_ref_out_pair(dataset, set_type)
         return metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names(), output_dict=True)
     

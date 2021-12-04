@@ -59,6 +59,7 @@ class UrbanDictWithLiwcCategoryMapper:
     def get_mapped_liwc_categories(self, liwc_cats_str: str) -> List[str]:
         liwc_cats_str = str(liwc_cats_str)
         cats_lst = liwc_cats_str.split('|')
+        return cats_lst # TODO fix that - this is temp because we need the classes as is not mapped to parents
         mapped_cats_set = set()
         for cat_str in cats_lst:
             if cat_str in self.__mappings_dict:
@@ -66,7 +67,7 @@ class UrbanDictWithLiwcCategoryMapper:
         return list(mapped_cats_set)
         
 
-    MAPPING_14CLASS_dict = {
+    CLASS_MAPPING_dict = {
         'affect': 'affect',
         'posemo': 'affect',
         'negemo': 'affect',
@@ -104,12 +105,13 @@ class UrbanDictWithLiwcCategoryMapper:
         'motion': 'relativ',
         'space': 'relativ',
         'time': 'relativ',
-        'work': 'work',
-        'leisure': 'leisure',
-        'home': 'home',
-        'money': 'money',
-        'relig': 'relig',
-        'death': 'death',
+        'pconcern': 'pconcern',
+        'work': 'pconcern',
+        'leisure': 'pconcern',
+        'home': 'pconcern',
+        'money': 'pconcern',
+        'relig': 'pconcern',
+        'death': 'pconcern',
         'informal': 'informal',
         'swear': 'informal',
         'netspeak': 'informal',
@@ -142,20 +144,20 @@ class UrbanDictWithLiwcUtil: # TODO remove this and fix model evaluation
     
     @staticmethod
     def y_multilabel(dataset: UrbanDictWithLiwc, set_type='test'):
-        liwc14_mapper = UrbanDictWithLiwcCategoryMapper(UrbanDictWithLiwcCategoryMapper.MAPPING_14CLASS_dict)
+        liwc_mapper = UrbanDictWithLiwcCategoryMapper(UrbanDictWithLiwcCategoryMapper.CLASS_MAPPING_dict)
         class_names_lst = dataset.class_names()
 
         if set_type == 'test':    
             test_path_str = dataset.get_path()['test']
             test_df = pd.read_csv(test_path_str, index_col=0)
 
-            y_test_multi_lst = test_df['liwc'].apply(lambda cats_str: liwc14_mapper.get_mapped_liwc_categories(cats_str)).to_list()
-            return [[class_names_lst.index(cat_str.upper()) for cat_str in cat_lst] for cat_lst in y_test_multi_lst]
+            y_test_multi_lst = test_df['liwc'].apply(lambda cats_str: liwc_mapper.get_mapped_liwc_categories(cats_str)).to_list()
+            return [[class_names_lst.index(cat_str) for cat_str in cat_lst] for cat_lst in y_test_multi_lst]
 
         elif set_type == 'dev' or set_type == 'val':
             train_df = pd.read_csv(dataset.get_path()['train'])
-            y_valid_multi_lst = train_df['liwc'].iloc[dataset.valid_index_lst].apply(lambda cats_str: liwc14_mapper.get_mapped_liwc_categories(cats_str)).to_list()
-            return [[class_names_lst.index(cat_str.upper()) for cat_str in cat_lst] for cat_lst in y_valid_multi_lst]
+            y_valid_multi_lst = train_df['liwc'].iloc[dataset.valid_index_lst].apply(lambda cats_str: liwc_mapper.get_mapped_liwc_categories(cats_str)).to_list()
+            return [[class_names_lst.index(cat_str) for cat_str in cat_lst] for cat_lst in y_valid_multi_lst]
 
         else:
             raise ValueError('Unexpected Set type {}'.format(set_type))
