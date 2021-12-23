@@ -133,9 +133,7 @@ class UrbanDictWithLiwcUtil: # TODO remove this and fix model evaluation
         y_hat_test_adjust = [ref if out in ref_lst else out for ref, ref_lst, out in zip(y_test, y_test_multi, y_hat_test)]
         
         detailed_eval = metrics.classification_report(y_test, y_hat_test_adjust, target_names=dataset.class_names(), output_dict=True)
-         
         confusion_matrix = metrics.confusion_matrix(y_test, y_hat_test_adjust, normalize=normalize)
-        
         return {
             'eval': detailed_eval,
             'confusion_matrix': confusion_matrix
@@ -161,3 +159,53 @@ class UrbanDictWithLiwcUtil: # TODO remove this and fix model evaluation
 
         else:
             raise ValueError('Unexpected Set type {}'.format(set_type))
+    
+    @staticmethod
+    def eval_with_voting(dataset: UrbanDictWithLiwc, model: SequenceClassificationModel, normalize=None, set_type='test'): # TODO very hacky
+        """
+        Group same words together and use the most frequent label to assign to that word
+        """
+        y_test, y_hat_test = model.get_test_ref_out_pair(dataset, set_type)
+        y_hat_test_prob = model.get_test_out_prob(dataset, set_type)
+        y_test_multi = UrbanDictWithLiwcUtil.y_multilabel(dataset, set_type)
+        y_hat_test_adjust = [ref if out in ref_lst else out for ref, ref_lst, out in zip(y_test, y_test_multi, y_hat_test)]
+
+        test_df = pd.read_csv(dataset.get_path()['test'])
+        test_df['y_test'] = y_test
+        test_df['y_hat_test'] = y_hat_test_adjust
+        test_df['y_hat_test_prob'] = list(y_hat_test_prob)
+
+        def label_of(labels_sr: pd.Series) -> str:
+            assert(len(set(labels_sr.to_list())) == 1)
+            return labels_sr.to_list()[0]
+        
+        def most_frequent_label_of(labels_sr: pd.Series) -> str:
+            label_lst = labels_sr.to_list()
+            return max(set(label_lst), key=label_lst.count)
+        
+        def avg_prob(label, label_prob_df: pd.DataFrame) -> float:
+            return label_prob_df[label_prob_df.y_hat_test == label].y_hat_test_prob.mean()
+        
+        def squash_groups(word_gp):
+            label = most_frequent_label_of(word_gp['y_hat_test'])
+            d = {
+                'y_test': label_of(word_gp['y_test']),
+                'y_hat_test': label,
+                'y_hat_test_prob': avg_prob(label, word_gp[['y_hat_test', 'y_hat_test_prob']])
+            }
+            return pd.Series(d)
+
+        test_voted_df = test_df.groupby('word').apply(squash_groups)
+
+        y_test = test_voted_df.y_test.to_list()
+        y_hat_test = test_voted_df.y_hat_test.to_list()
+
+        detailed_eval = metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names(), output_dict=True)
+        confusion_matrix = metrics.confusion_matrix(y_test, y_hat_test, normalize=normalize)
+        return {
+            'eval': detailed_eval,
+            'confusion_matrix': confusion_matrix,
+            'test_df': test_df,
+            'test_voted_df': test_voted_df
+        }
+

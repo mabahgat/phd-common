@@ -198,7 +198,7 @@ class SequenceClassificationModel(HFModel):
             self.__y_test_cache[(dataset, set_type)] = SequenceClassificationModel.__class_index_from_tensors(test_tensor)
         return self.__y_test_cache[(dataset, set_type)]
     
-    def set_test_ref_labels(self, dataset: DatasetBase, labels_lst, set_type: str='test'):
+    def set_test_ref_labels(self, dataset: DatasetBase, labels_lst: List[int], set_type: str='test'):
         """
         Alters reference labels cached corresponding to the dataset
         :param labels_lst: Either a list of integers or a list of arrays or a list of mix
@@ -211,12 +211,22 @@ class SequenceClassificationModel(HFModel):
             self.__y_hat_test_cache[(dataset, set_type)] = [list(labels).index(max(labels)) for labels in y_hat_test_prob]
         return self.__y_hat_test_cache[(dataset, set_type)]
     
+    def set_test_out_labels(self, dataset: DatasetBase, labels_lst: List[int], set_type: str='test'):
+        """
+        Alters output labels cached corresponding to the dataset
+        :param labels_lst: Either a list of integers or a list of arrays or a list of mix
+        """
+        self.__y_hat_test_cache[(dataset, set_type)] = labels_lst
+    
     def get_test_out_prob(self, dataset: DatasetBase, set_type: str='test'):
         if (dataset, set_type) not in self.__y_hat_test_prob_cache:
             test_tensor = SequenceClassificationModel.__get_set(dataset, set_type)
             test_results = self._model.predict(test_tensor)
             self.__y_hat_test_prob_cache[(dataset, set_type)] = SequenceClassificationModel.normalize_tf(test_results.logits)
         return self.__y_hat_test_prob_cache[(dataset, set_type)]
+    
+    def set_test_out_prob(self, dataset: DatasetBase, prob_lst: List[float], set_type: str='test'):
+        self.__y_hat_test_prob_cache[(dataset, set_type)] = prob_lst
 
     @staticmethod
     def __get_set(dataset: DatasetBase, set_type: str):

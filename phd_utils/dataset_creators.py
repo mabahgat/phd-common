@@ -303,7 +303,7 @@ class LiwcDatasetCreator:
 
         return content_df[~content_df.word.apply(matches_a_test_entry)]
     
-    def select_for_test(self, count: int=None, min_class_count: int=None, distribution_method_str: str='ud_word', min_diff_int: int=None, samples_per_word_int: int=1) -> int:
+    def select_for_test(self, count: int=None, min_class_count: int=None, distribution_method_str: str='ud_word', min_diff_int: int=None, top_count_int: int=1) -> int:
         """
         :param count: count has to be at least equal to the number of categories
         :returns: Number of samples actually selected. To retreive the actuall test set call get_test_set
@@ -333,14 +333,17 @@ class LiwcDatasetCreator:
         annotated_df = self.get_raw_annotated()
         annotated_df['liwc'] = annotated_df.liwc.apply(LiwcCategories.keep_lowest_cats_only) # match distribution
         if min_diff_int is not None:
-            annotated_df = annotated_df[annotated_df.diffLikes > min_diff_int]
-        best_entry_per_word_df = annotated_df.sort_values(by='diffLikes', ascending=False).groupby('word', as_index=False).head(n=1).sample(frac=1, random_state=0)
+            annotated_df = annotated_df[annotated_df.diffLikes >= min_diff_int]
+        sorted_df = annotated_df.sort_values(by='diffLikes', ascending=False)
+        candidate_words_df = sorted_df.groupby('word', as_index=False).head(n=1).sample(frac=1, random_state=0)[['word', 'liwc']]
         
         selected_df_lst = []
         for cat_str, count_needed_int in counts_dict.items():
-            selected_df = best_entry_per_word_df[best_entry_per_word_df.liwc.apply(lambda liwc_lst: cat_str in liwc_lst)].head(count_needed_int)
+            selected_words_df = candidate_words_df[candidate_words_df.liwc.apply(lambda liwc_lst: cat_str in liwc_lst)].head(count_needed_int)
+            selected_words_lst = selected_words_df.word.to_list()
+            selected_df = sorted_df[sorted_df.word.isin(selected_words_lst)].groupby('word', as_index=False).head(n=top_count_int)
             selected_df_lst.append(selected_df)
-            best_entry_per_word_df.drop(selected_df.index, inplace=True)
+            candidate_words_df.drop(selected_words_df.index, inplace=True)
         
         self.__test_df = pd.concat(selected_df_lst)
         return len(self.__test_df)
@@ -626,6 +629,16 @@ def __liwc_create_train_sets(train_df: pd.DataFrame, cats_obj: LiwcCategories, r
     dataset_obj.save_train(save_path, overwrite_b=True)
     print('Done {}'.format(save_path))
 
+    dataset_obj.select_for_train(topN=10, minDiff=1, ignore_testset_b=True)
+    save_path = root_path / '{}_train-top10-minDiff1.csv'.format(prefix_str)
+    dataset_obj.save_train(save_path, overwrite_b=True)
+    print('Done {}'.format(save_path))
+
+    dataset_obj.select_for_train(topN=10, minDiff=-10, ignore_testset_b=True)
+    save_path = root_path / '{}_train-top10_minDiffNeg10.csv'.format(prefix_str)
+    dataset_obj.save_train(save_path, overwrite_b=True)
+    print('Done {}'.format(save_path))
+
 
 def __liwc_create_test_sets(test_df: pd.DataFrame, cats_obj: LiwcCategories, root_path: Path, prefix_str: str) -> None:
     dataset_obj = LiwcDatasetCreator(test_df=test_df)
@@ -639,6 +652,8 @@ def create_liwc_datasets():
     from phd_utils import global_config
     
     root_path = Path(global_config.liwc.create_run.root)
+    if not root_path.exists():
+        raise Exception('Target path does not exist {}'.format(root_path))
 
     print('Reading dataset from {}'.format(global_config.resources.ud.raw))
     dataset = LiwcDatasetCreator.from_raw(global_config.resources.ud.raw)
@@ -646,7 +661,7 @@ def create_liwc_datasets():
     dataset.filter_stopwords()
     dataset.annotate(annotation_type_str='strict')
     dataset.redo_categories(__liwc_cats_for_all())
-    dataset.select_for_test(count=1000, samples_per_word_int=1)
+    dataset.select_for_test(count=1000, top_count_int=1, min_diff_int=1)
     dataset.save_test(root_path / 'liwc_all_test-top1-1000.csv', overwrite_b=True)
     dataset.select_for_train() # select everything other than the testset
 

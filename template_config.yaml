@@ -1,102 +1,145 @@
 models:
-  path: <root_path>/models/phd_framework
+  path: /path/to/root/models/phd_framework
 
 datasets:
   clpysch:
     task_a:
       path:
-        train: <root_path>/jws/clpysch/data/task_A_train.posts.json
-        test: <root_path>/jws/clpysch/data/task_A_test.posts.json
+        train: /path/to/root/jws/clpysch/data/task_A_train.posts.json
+        test: /path/to/root/jws/clpysch/data/task_A_test.posts.json
 
   affect_in_tweets:
     path:
-      train: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-train.tsv
-      dev: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-dev.tsv
-      test: <data_set_path>/affect_in_tweets/2018-EI-oc-En-all-test.tsv
+      train: /path/to/data/affect_in_tweets/2018-EI-oc-En-all-train.tsv
+      dev: /path/to/data/affect_in_tweets/2018-EI-oc-En-all-dev.tsv
+      test: /path/to/data/affect_in_tweets/2018-EI-oc-En-all-test.tsv
 
   emocontext:
     classify_emotions:
       path:
-        train: <data_set_path>/emo_context/parts/3_class/train.tsv
-        dev: <data_set_path>/emo_context/parts/3_class/dev.tsv
-        test: <data_set_path>/emo_context/parts/3_class/test.tsv
+        train: /path/to/data/emo_context/parts/3_class/train.tsv
+        dev: /path/to/data/emo_context/parts/3_class/dev.tsv
+        test: /path/to/data/emo_context/parts/3_class/test.tsv
 
     emotions_vs_none: 
       path:
-        train: <data_set_path>/emo_context/parts/2_class/train.tsv
-        dev: <data_set_path>/emo_context/parts/2_class/dev.tsv
-        test: <data_set_path>/emo_context/parts/2_class/test.tsv
+        train: /path/to/data/emo_context/parts/2_class/train.tsv
+        dev: /path/to/data/emo_context/parts/2_class/dev.tsv
+        test: /path/to/data/emo_context/parts/2_class/test.tsv
 
     classify_all:
       path:
-        train: <data_set_path>/emo_context/parts/2_class/train.tsv
-        dev: <data_set_path>/emo_context/parts/2_class/dev.tsv
-        test: <data_set_path>/emo_context/parts/2_class/test.tsv
+        train: /path/to/data/emo_context/parts/2_class/train.tsv
+        dev: /path/to/data/emo_context/parts/2_class/dev.tsv
+        test: /path/to/data/emo_context/parts/2_class/test.tsv
 
 
   agnews:
     path:
-      train: <data_set_path>/CharCnn_Keras/data/ag_news_csv/train.csv
-      test: <data_set_path>/CharCnn_Keras/data/ag_news_csv/test.csv
+      train: /path/to/data/CharCnn_Keras/data/ag_news_csv/train.csv
+      test: /path/to/data/CharCnn_Keras/data/ag_news_csv/test.csv
 
   emonet:
-    path: <data_set_path>/emo_net/emo_net_8class.tsv
+    path: /path/to/data/emo_net/emo_net_8class.tsv
       
   ud_liwc_best_v1:
     path:
-      train: <data_set_path>/urban_dict/liwc_tagged/ud_data_best_def_train.csv
-      test: <data_set_path>/urban_dict/liwc_tagged/ud_data_best_def_test.csv
+      train: /path/to/data/urban_dict/liwc_tagged/ud_data_best_def_train.csv
+      test: /path/to/data/urban_dict/liwc_tagged/ud_data_best_def_test.csv
   
   ud_liwc:
-    liwc14:
-      labels: WORK,AFFECT,BIO,RELIG,RELATIV,PERCEPT,INFORMAL,LEISURE,DRIVES,SOCIAL,COGPROC,DEATH,MONEY,HOME
+    liwc_root_9:
+      labels: affect,social,cogproc,percept,bio,drives,relativ,pconcern,informal
       exact:
-        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14multi_ud_test.csv
+        test:
+          top1: /path/to/data/liwc_expand/liwc_root-9_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_root-9_test-top10-1000.csv
         train:
-          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact.csv
-          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1.csv
-          top1_tweetsamples: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetsamples.csv
-          top1_tweetSamplesDefTweetDistTop10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top1_tweetSamplesDefTweetDistTop10.csv
-          top10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10.csv
-          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff1.csv
-          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10.csv
-          mindiff10_tweetsamples: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples.csv
-          mindiff10_tweetsamples_top30: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10_tweetsamples_top30.csv
-          mindiff10_tweetSamplesDefTweetDistTop10: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_minDiff10_tweetSamplesDefTweetDistTop10.csv
-          top10multiple: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_top10multiple.csv
-          mindiff10multiple: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_exact_mindiff10multiple.csv
-      all:
-        train: 
-          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train.csv
-          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/14class/liwc14_ud_train_top1.csv
-    liwc_emo:
-      labels: AFFECT,NEGEMO,POSEMO
+          top1: /path/to/data/liwc_expand/liwc_root-9_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_root-9_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_root-9_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_root-9_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_root-9_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_root-9_train-minDiff10.csv
+    liwc_affect_3:
+      labels: affect,posemo,negemo
       exact:
-        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_test.csv
+        test:
+          top1: /path/to/data/liwc_expand/liwc_affect-3_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_affect-3_test-top10-1000.csv
         train:
-          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match.csv
-          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_top1.csv
-          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_mindiff1.csv
-          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/emo_class/liwc-emo_ud_train_exact-match_mindiff10.csv
-    liwc_bio:
-      labels: BIO,BODY,HEALTH,SEXUAL,INGEST
+          top1: /path/to/data/liwc_expand/liwc_affect-3_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_affect-3_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_affect-3_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_affect-3_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_affect-3_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_affect-3_train-minDiff10.csv
+    liwc_affect_2:
+      labels: posemo,negemo
       exact:
-        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_test.csv
+        test:
+          top1: /path/to/data/liwc_expand/liwc_affect-2_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_affect-2_test-top10-1000.csv
         train:
-          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match.csv
-          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_top1.csv
-          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_mindiff1.csv
-          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/bio_class/liwc-bio_ud_train_exact-match_mindiff10.csv
-    liwc_social:
-      labels: SOCIAL,FAMILY,FRIEND,FEMALE,MALE
+          top1: /path/to/data/liwc_expand/liwc_affect-2_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_affect-2_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_affect-2_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_affect-2_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_affect-2_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_affect-2_train-minDiff10.csv
+    liwc_social_5:
+      labels: social,family,friend,female,male
       exact:
-        test: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_test.csv
+        test:
+          top1: /path/to/data/liwc_expand/liwc_social-5_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_social-5_test-top10-1000.csv
         train:
-          all: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match.csv
-          top1: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_top1.csv
-          mindiff1: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_mindiff1.csv
-          mindiff10: <data_set_path>/urban_dict/liwc_tagged_v2.1/social_class/liwc-social_ud_train_exact-match_mindiff10.csv
+          top1: /path/to/data/liwc_expand/liwc_social-5_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_social-5_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_social-5_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_social-5_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_social-5_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_social-5_train-minDiff10.csv
+    liwc_social_3:
+      labels: social,family,friend
+      exact:
+        test:
+          top1: /path/to/data/liwc_expand/liwc_social-3_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_social-3_test-top10-1000.csv
+        train:
+          top1: /path/to/data/liwc_expand/liwc_social-3_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_social-3_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_social-3_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_social-3_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_social-3_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_social-3_train-minDiff10.csv          
+    liwc_bio_5:
+      labels: bio,body,health,sexual,ingest
+      exact:
+        test:
+          top1: /path/to/data/liwc_expand/liwc_bio-5_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_bio-5_test-top10-1000.csv
+        train:
+          top1: /path/to/data/liwc_expand/liwc_bio-5_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_bio-5_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_bio-5_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_bio-5_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_bio-5_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_bio-5_train-minDiff10.csv
+    liwc_pconcern_6:
+      labels: work,leisure,home,money,relig,death # parent 'pconcern' removed because it is never used
+      exact:
+        test:
+          top1: /path/to/data/liwc_expand/liwc_pconcern-7_test-top1-1000.csv
+          top10: /path/to/data/liwc_expand/liwc_pconcern-7_test-top10-1000.csv
+        train:
+          top1: /path/to/data/liwc_expand/liwc_pconcern-7_train-top1.csv
+          top10: /path/to/data/liwc_expand/liwc_pconcern-7_train-top10.csv
+          top10_minDiff1: /path/to/data/liwc_expand/liwc_pconcern-7_train-top10-minDiff1.csv
+          top10_minDiffNeg10: /path/to/data/liwc_expand/liwc_pconcern-7_train-top10-minDiffNeg10.csv
+          minDiff1: /path/to/data/liwc_expand/liwc_pconcern-7_train-minDiff1.csv
+          minDiff10: /path/to/data/liwc_expand/liwc_pconcern-7_train-minDiff10.csv
     
 
 liwc:
-  path: <root_path>/resources/LIWC2015_English_Flat.dic
+  path: /path/to/root/resources/LIWC2015_English_Flat.dic

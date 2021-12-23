@@ -497,7 +497,8 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
             config_dict = {}
         set_if_not_set('labels', 'liwc_root_9') # liwc_root_9, liwc_affect_3 ...
         set_if_not_set('train_type', 'exact') # exact, all
-        set_if_not_set('selection_mode', 'top1')
+        set_if_not_set('selection_mode', 'top1') # top1, minDiff1, top10, minDiff10
+        set_if_not_set('test_selection_mode', 'top1') # top1, top10
         set_if_not_set('text_mode', 'merge') # merge, meaning, example
         set_if_not_set('eval_mode', 'single') # single, any
         set_if_not_set('target_labels_count', 'single') # single, multiple
@@ -508,7 +509,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         Return data files path
         """
         return {
-            'test': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].test,
+            'test': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].test[self._config_dict['test_selection_mode']],
             'train': global_config.datasets.ud_liwc[self._config_dict['labels']][self._config_dict['train_type']].train[self._config_dict['selection_mode']]
         }
     
