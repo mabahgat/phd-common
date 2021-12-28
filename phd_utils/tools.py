@@ -41,7 +41,7 @@ def set_gpu_to_next_available(min_memory_mb=22_000):
     return gpu
 
 
-def wait_and_set_gpu_to_nex_available(min_memory_mb=22_000, wait_in_sec=60, timeout_trails_int=None, log_b=True):
+def wait_and_set_gpu_to_next_available(min_memory_mb=22_000, wait_in_sec=60, timeout_trails_int=None, log_b=True):
     gpu = None
     attempts = 0
     while gpu is None:
