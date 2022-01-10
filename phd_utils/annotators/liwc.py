@@ -1,6 +1,7 @@
 from phd_utils import global_config
 from liwc import Liwc
 from typing import List, Dict
+from random import Random
 
 
 liwc_en = Liwc(global_config.liwc.path)
@@ -28,3 +29,12 @@ def liwc_annotate_word_strict(word_str: str) -> List[str]:
         return __liwc_en_strict_dict[word_str].copy()
     else:
         return []
+
+
+def get_liwc_category_examples(cat_str, count=4, rand_seed=0) -> List[str]:
+    r = Random(rand_seed)
+    words_set = set()
+    for word_str, labels_lst in liwc_en.lexicon.items():
+        if cat_str in labels_lst:
+            words_set.add(word_str)
+    return r.sample(words_set, k=count)
