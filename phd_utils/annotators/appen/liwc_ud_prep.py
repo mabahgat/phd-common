@@ -153,7 +153,7 @@ def to_appen_csv_for_human_annotation(in_file: Union[pd.DataFrame, str],
     appen_df = __get_dataframe(in_file)
     if exclude_index_lst:
         appen_df = appen_df.drop(exclude_index_lst, axis=0)
-    appen_df['category'] = appen_df['Classes']
+    appen_df['category'] = appen_df['model_label']
     
     __add_clarity_columns_inplace(appen_df)
     appen_df['_golden'] = False
