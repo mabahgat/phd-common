@@ -42,6 +42,69 @@ def get_liwc_category_examples(cat_str, count=4, rand_seed=0) -> List[str]:
 
 
 class LiwcDict:
+
+    def __init__(self, dict_path_str:str=None, liwc: Liwc=None):
+        if dict_path_str:
+            self.liwc = Liwc(dict_path_str)
+        elif liwc:
+            self.liwc = liwc
+        else:
+            self.liwc = Liwc(global_config.liwc.path) # default english liwc
+        self.__strict_dict = self.__create_strict_liwc_dict()
+    
+    def __create_strict_liwc_dict(self) -> Dict[str, List[str]]:
+        def remove_wild_card(entry_str):
+            if entry_str.endswith('*'):
+                return entry_str[0:-1]
+            return entry_str
+        return {remove_wild_card(key): value for key, value in self.liwc.lexicon.items()}
+    
+    def annotate_word(self, word_str: str) -> List[str]:
+        return self.liwc.search(word_str)
+
+    def annotate_sentence(self, word_lst: List[str], include_all_cats=False) -> Dict[str, int]:
+        result_dict = dict(self.liwc.parse(word_lst))
+        if include_all_cats:
+            all_dict = {cat_str: 0 for cat_str in self.liwc.categories.values()} # TODO should be done only once
+            for cat_str, count_int in result_dict.items():
+                all_dict[cat_str] = count_int
+            return all_dict
+        else:
+            return result_dict
+    
+    def word_hit_count(self, word_lst: List[str]) -> int:
+        return sum([1 for word_str in word_lst if len(self.liwc.search(word_str)) != 0])
+    
+    def word_hit_count_strict(self, word_lst: List[str]) -> int:
+        return sum([1 for word_str in word_lst if word_str in self.__strict_dict])
+
+    def filter_with_liwc(self, word_dict: Dict[str, int]) -> Dict[str, int]:
+        return {k:v for k, v in word_dict.items() if self.liwc.search(k)}
+    
+    def filter_with_liwc_strict(self, word_dict: Dict[str, int]) -> Dict[str, int]:
+        return {k:v for k, v in word_dict.items() if k in self.__strict_dict}
+
+    def annotate_word_strict(self, word_str: str) -> List[str]:
+        if word_str in self.__strict_dict:
+            return self.__strict_dict[word_str].copy()
+        else:
+            return []
+    
+    def annotate_sentence_strict(self, word_lst: List[str]) -> Dict[str, int]:
+        cat_counts_dict = {}
+        for word_str in word_lst:
+            cat_lst = self.annotate_word_strict(word_str)
+            for cat_str in cat_lst:
+                if cat_str not in cat_counts_dict:
+                    cat_counts_dict[word_str] = 0
+                cat_counts_dict[cat_str] += 1
+        return cat_counts_dict
+    
+    def cat_count(self) -> int:
+        return len(self.liwc.categories)
+
+
+class LiwcDictModifier:
     """
     parses and modifies liwc dictionary consumed by liwc library
     """
@@ -56,16 +119,16 @@ class LiwcDict:
     def __parse_file(self) -> (Dict[str, int], Dict[str, List[int]]):
         with open(file=self.__src_file_str, mode='r', encoding='utf8') as liwc_file:
             lines_lst = [l.strip() for l in liwc_file.readlines()]
-        dict_end_index = LiwcDict.__get_cat_mapping_end_index(lines_lst)
+        dict_end_index = LiwcDictModifier.__get_cat_mapping_end_index(lines_lst)
 
         cat_lst = lines_lst[1:dict_end_index]
         word_cat_lst = lines_lst[dict_end_index + 1:]
 
-        cat_dict = LiwcDict.__parse_cat_dict(cat_lst)
-        word_cat_dict = LiwcDict.__parse_word_lst(word_cat_lst)
+        cat_dict = LiwcDictModifier.__parse_cat_dict(cat_lst)
+        word_cat_dict = LiwcDictModifier.__parse_word_lst(word_cat_lst)
 
         if 'pconcern' not in cat_dict:
-            LiwcDict.__fix_for_pconcern(cat_dict, word_cat_dict)
+            LiwcDictModifier.__fix_for_pconcern(cat_dict, word_cat_dict)
 
         return cat_dict, word_cat_dict
 
@@ -99,6 +162,7 @@ class LiwcDict:
         """
         Add pconcern category
         """
+        # TODO put pconcern before its children
         pconcern_idx = max(cat_dict.values()) +  1
         cat_dict['pconcern'] = pconcern_idx
 
@@ -126,6 +190,11 @@ class LiwcDict:
     def add(self, new_words_lst: Dict[str, str]) -> None:
         for word_str, cat_str in new_words_lst.items():
             word_str = str(word_str) # pandas auto parses 'nan' string into float
+            word_str = re.sub(pattern=r'\s+', repl=' ', string=word_str)
+            if '$' in word_str: # '$' is a special char in Liwc lib that marks end of word
+                raise ValueError('Can not accept words with $: {}'.format(word_str))
+            if '*' in word_str and not word_str.endswith('*'):
+                raise ValueError('The character * has a special meaning and only accepted at the end of the word: {}'.format(word_str))
             cat_index = self.__cat_mapping_dict[cat_str]
             if word_str in self.__word_cat_dict:
                 word_cats_lst = self.__word_cat_dict[word_str]
