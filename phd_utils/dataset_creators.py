@@ -602,6 +602,56 @@ def __liwc_cats_for_pconcer() -> LiwcCategories:
     return LiwcCategories(pconcerns_cats_set)
 
 
+def __liwc_cats_for_drives_5() -> LiwcCategories:
+    drives_cats_set = set(['affiliation', 'achiev', 'power', 'reward', 'risk'])
+    return LiwcCategories(drives_cats_set)
+
+
+def __liwc_cats_for_drives_6() -> LiwcCategories:
+    drives_cats_set = set(['drives', 'affiliation', 'achiev', 'power', 'reward', 'risk'])
+    return LiwcCategories(drives_cats_set)
+
+
+def __liwc_cats_for_percept_3() -> LiwcCategories:
+    percept_cats_set = set(['see', 'hear', 'feel'])
+    return LiwcCategories(percept_cats_set)
+
+
+def __liwc_cats_for_percept_4() -> LiwcCategories:
+    percept_cats_set = set(['percept', 'see', 'hear', 'feel'])
+    return LiwcCategories(percept_cats_set)
+
+
+def __liwc_cats_for_cogproc_6() -> LiwcCategories:
+    cogproc_cats_set = set(['insight', 'cause', 'discrep', 'tentat', 'certain', 'differ'])
+    return LiwcCategories(cogproc_cats_set)
+
+
+def __liwc_cats_for_cogproc_7() -> LiwcCategories:
+    cogproc_cats_set = set(['cogproc', 'insight', 'cause', 'discrep', 'tentat', 'certain', 'differ'])
+    return LiwcCategories(cogproc_cats_set)
+
+
+def __liwc_cats_for_relativ_3() -> LiwcCategories:
+    relative_cats_set = set(['motion', 'space', 'time'])
+    return LiwcCategories(relative_cats_set)
+
+
+def __liwc_cats_for_relativ_4() -> LiwcCategories:
+    relative_cats_set = set(['relativ', 'motion', 'space', 'time'])
+    return LiwcCategories(relative_cats_set)
+
+
+def __liwc_cats_for_informal_5() -> LiwcCategories:
+    informal_cats_set = set(['swear', 'netspeak', 'assent', 'nonflu', 'filler'])
+    return LiwcCategories(informal_cats_set)
+
+
+def __liwc_cats_for_informal_6() -> LiwcCategories:
+    informal_cats_set = set(['informal', 'swear', 'netspeak', 'assent', 'nonflu', 'filler'])
+    return LiwcCategories(informal_cats_set)
+
+
 def __liwc_create_train_sets(train_df: pd.DataFrame, cats_obj: LiwcCategories, root_path: Path, prefix_str: str) -> None:
     """
     create and saves files for top1, top10, minDiff1 and minDiff10
@@ -690,8 +740,48 @@ def create_liwc_datasets():
     __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_bio(), root_path=root_path, prefix_str='liwc_bio-5')
 
     print('Creating personal concerns')
-    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
-    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-7')
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-6')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_pconcer(), root_path=root_path, prefix_str='liwc_pconcern-6')
+
+    print('Creating drives - 5 class: {}'.format(__liwc_cats_for_drives_5()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_drives_5(), root_path=root_path, prefix_str='liwc_drives-5')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_drives_5(), root_path=root_path, prefix_str='liwc_drives-5')
+
+    print('Creating drives - 6 class: {}'.format(__liwc_cats_for_drives_6()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_drives_6(), root_path=root_path, prefix_str='liwc_drives-6')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_drives_6(), root_path=root_path, prefix_str='liwc_drives-6')
+
+    print('Creating percept - 3 class: {}'.format(__liwc_cats_for_percept_3()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_percept_3(), root_path=root_path, prefix_str='liwc_percept_3')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_percept_3(), root_path=root_path, prefix_str='liwc_percept_3')
+
+    print('Creating percept - 4 class: {}'.format(__liwc_cats_for_percept_4()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_percept_4(), root_path=root_path, prefix_str='liwc_percept_4')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_percept_4(), root_path=root_path, prefix_str='liwc_percept_4')
+
+    print('Creating cogproc - 6 class: {}'.format(__liwc_cats_for_cogproc_6()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_cogproc_6(), root_path=root_path, prefix_str='liwc_cogproc_6')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_cogproc_6(), root_path=root_path, prefix_str='liwc_cogproc_6')
+
+    print('Creating cogproc - 7 class: {}'.format(__liwc_cats_for_cogproc_7()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_cogproc_7(), root_path=root_path, prefix_str='liwc_cogproc_7')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_cogproc_7(), root_path=root_path, prefix_str='liwc_cogproc_7')
+
+    print('Creating relativ - 3 class: {}'.format(__liwc_cats_for_relativ_3()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_relativ_3(), root_path=root_path, prefix_str='liwc_relativ_3')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_relativ_3(), root_path=root_path, prefix_str='liwc_relativ_3')
+
+    print('Creating relativ - 4 class: {}'.format(__liwc_cats_for_relativ_4()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_relativ_4(), root_path=root_path, prefix_str='liwc_relativ_4')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_relativ_4(), root_path=root_path, prefix_str='liwc_relativ_4')
+
+    print('Creating informal - 5 class: {}'.format(__liwc_cats_for_informal_5()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_informal_5(), root_path=root_path, prefix_str='liwc_informal_5')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_informal_5(), root_path=root_path, prefix_str='liwc_informal_5')
+
+    print('Creating informal - 6 class: {}'.format(__liwc_cats_for_informal_6()))
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=__liwc_cats_for_informal_6(), root_path=root_path, prefix_str='liwc_informal_6')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=__liwc_cats_for_informal_6(), root_path=root_path, prefix_str='liwc_informal_6')
     
     print('Done!')
 
