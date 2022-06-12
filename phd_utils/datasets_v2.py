@@ -518,7 +518,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         self._process_content_in_place(content_df)
         x_tuple = self._create_input_text_from_dataframe(content_df)
         label_select_random = DatasetBase.random_with_seed(0)
-        y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self._label_to_index(label_str, label_select_random))
+        y_tuple = content_df['liwc'].astype(str).apply(lambda label_str: self.label_to_index(label_str, label_select_random)).to_list()
         return x_tuple, y_tuple
 
     def _process_content_in_place(self, content_df):
@@ -554,7 +554,7 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
         labels_lst = global_config.datasets.ud_liwc[self._config_dict['labels']].labels.split(',')
         return [label_str for label_str in labels_lst]
     
-    def _label_to_index(self, label_list_str:str, rand:Random=None):
+    def label_to_index(self, label_list_str:str, rand:Random=None):
         label_index_lst = [self.class_names().index(label_str) for label_str in label_list_str.split("|")] #FIXME - avoid using different casing
         if self._config_dict['target_labels_count'] == 'single':
             return label_index_lst[0]
@@ -590,3 +590,12 @@ class UrbanDictWithLiwc(LocalDatasetWithOptionalValidation):
     def name(self):
         config_str = '-'.join(list(self._config_dict.items()))
         return 'ud_liwc_{}_valid{}'.format(config_str, self._valid_prcnt)
+
+
+class UrbanDictWordsOnlyWithLiwc(UrbanDictWithLiwc):
+
+    def __init__(self, valid_prcnt, config_dict=None):
+        super().__init__(valid_prcnt, config_dict)
+    
+    def _create_input_text_from_dataframe(self, content_df):
+        return content_df.word.to_list()

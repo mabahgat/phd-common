@@ -5,18 +5,22 @@ import re
 import json
 from datetime import datetime
 import time
-from typing import List, Dict
+from typing import List, Dict, Set
 
 from sklearn import metrics
 import numpy as np
+from scipy.spatial import distance
 
 import tensorflow as tf
 from transformers import TFBertForSequenceClassification, BertTokenizer, BertConfig
 from transformers import TFRobertaForSequenceClassification, RobertaTokenizer, RobertaConfig
 from transformers import TFT5ForConditionalGeneration, T5Tokenizer, T5Config
 
+from gensim.models import Word2Vec
+
 from phd_utils.datasets_v2 import DatasetBase
 from phd_utils import global_config
+from phd_utils.annotators.liwc import LiwcDict
 
 run_verbosity = 1
 
@@ -100,7 +104,6 @@ class ModelBase(ABC): # Previously named "Model"
 
     def exists(self):
         active_model_config.model_exists(self._label_str)
-
 
 
 class TFModel(ModelBase):
@@ -465,10 +468,250 @@ class T5SequenceClassification(SequenceClassificationModel):
         super().__init__(class_count, label_str, config, tokenizer, model_name_str)
 
     def _create_new_model(self, model_name_str):
-        return TFRobertaForSequenceClassification.from_pretrained(model_name_str, config=self._config)
+        return TFT5ForConditionalGeneration.from_pretrained(model_name_str, config=self._config)
 
     def load(self):
         """
         Loads a model from path specified by the active ModelConfig and set model label
         """
-        self._model = TFRobertaForSequenceClassification.from_pretrained(self._model_path(), config=self._config)  
+        self._model = TFT5ForConditionalGeneration.from_pretrained(self._model_path(), config=self._config)  
+
+
+class DenseClassifier(TFModel):
+    
+    def __init__(self, label_str, class_count, input_width, layer_count_int=1, layer_size_int=32):
+        self.__input_width = input_width
+        self.__class_count = class_count
+        model = self._build_model(layer_count_int, layer_size_int)
+        super().__init__(label_str, model)
+    
+    def _build_model(self, layer_count_int, layer_size_int) -> tf.keras.Model:
+        model = tf.keras.models.Sequential()
+        model.add(tf.keras.Input(shape=(self.__input_width,)))
+        for _ in range(layer_count_int):
+            model.add(tf.keras.layers.Dense(layer_size_int, activation='relu'))
+        model.add(tf.keras.layers.Dense(self.__class_count, activation='softmax'))
+        return model
+    
+    def is_loaded_from_disk(self) -> bool:
+        return False
+    
+    def train(self, dataset: DatasetBase, epochs):
+        if self.__class_count == 1:
+            loss = tf.keras.losses.BinaryCrossentropy()
+            metrics = [tf.keras.metrics.BinaryCrossentropy()]
+        elif self.__class_count >= 2:
+            loss = tf.keras.losses.CategoricalCrossentropy()
+            metrics = [tf.keras.metrics.CategoricalCrossentropy()]
+        else:
+            raise ValueError('Unexpected value for class count. Provided is {}'.format(self.__class_count))
+
+        self._model.compile(
+            optimizer=tf.keras.optimizers.Adam(),
+            loss=loss,
+            metrics=metrics
+        )
+
+        x_train, y_train = dataset.training_examples()
+        x_valid, y_valid = dataset.validation_examples()
+        history = self._model.fit(
+            x_train,
+            y_train,
+            batch_size=64,
+            epochs=epochs,
+            validation_data=(x_valid, y_valid)
+        )
+        return history
+
+    def evaluate(self, dataset: DatasetBase, set_type):
+        if set_type == 'valid':
+            x_test, y_test_one_hot = dataset.validation_examples()
+        elif set_type == 'test':
+            x_test, y_test_one_hot = dataset.testing_examples()
+        else:
+            raise ValueError('Unknown set type: {}'.format(set_type))
+        y_hat_test_prob = self.predict(x_test)
+
+        y_test = [np.argmax(np.array(r)) for r in y_test_one_hot]
+        y_hat_test = [np.argmax(np.array(r)) for r in y_hat_test_prob]
+
+        fscore = metrics.f1_score(y_test, y_hat_test, average='macro')
+        accuracy = metrics.accuracy_score(y_test, y_hat_test)
+
+        print(self._model.evaluate(x_test, y_test_one_hot))
+
+        result_dict = {
+            'f-score': fscore,
+            'accuracy': accuracy
+        }
+
+        return result_dict
+
+    def predict(self, text):
+        """
+        Predict probablities for either a text instance or a list
+        """
+        if isinstance(text, List):
+            return [self._model.predict(text_item) for text_item in text]
+        else:
+            return self._model.predict(text)
+
+
+class LiwcCountsClassifier(ModelBase):
+
+    def __init__(self, label_str, liwc: LiwcDict):
+        self.__liwc = liwc
+        super().__init__(label_str)
+
+    def train(self, dataset: DatasetBase, epochs):
+        raise Exception('This model can not be trained')
+
+    def evaluate(self, dataset: DatasetBase, set_type):
+        _, y_test, y_hat_test = self.__get_in_ref_out(dataset, set_type)
+
+        fscore = metrics.f1_score(y_test, y_hat_test, average='macro')
+        accuracy = metrics.accuracy_score(y_test, y_hat_test)
+
+        result_dict = {
+            'f-score': fscore,
+            'accuracy': accuracy
+        }
+
+        return result_dict
+    
+    def evaluate_detailed(self, dataset: DatasetBase, set_type):
+        _, y_test, y_hat_test = self.__get_in_ref_out(dataset, set_type)
+        return metrics.classification_report(y_test, y_hat_test, target_names=dataset.class_names() + ['None'], output_dict=True)
+    
+    def __get_in_ref_out(self, dataset: DatasetBase, set_type):
+        if set_type == 'valid':
+            x_test, y_test = dataset.validation_examples()
+        elif set_type == 'test':
+            x_test, y_test = dataset.testing_examples()
+        else:
+            raise ValueError('Unknown set type: {}'.format(set_type))
+        y_hat_test = self.predict_class(x_test)
+        y_hat_test = [LiwcCountsClassifier.__to_class_index(cat_str, dataset) for cat_str in y_hat_test]
+        
+        return x_test, y_test, y_hat_test
+    
+    @staticmethod
+    def __to_class_index(class_str: str, dataset: DatasetBase):
+        """
+        Converts from class name to class index
+        """
+        if not class_str:
+            return len(dataset.class_names())
+        return dataset.class_names().index(class_str)
+
+    def predict(self, text):
+        # returning probabilities won't work here as there might be parent-child relationship
+        if isinstance(text[0], list):
+            return [self.__liwc.annotate_sentence(t, include_all_cats=True) for t in text]
+        else:
+            return self.__liwc.annotate_sentence(text, include_all_cats=True)
+    
+    def predict_prob(self, text, class_lst):
+        if isinstance(text[0], list):
+            return [self.__predict_prob_instance(t, class_lst) for t in text]
+        else:
+            return self.__predict_prob_instance(text, class_lst)
+
+    def __predict_prob_instance(self, text_str, class_lst):
+        results_dict = self.predict(text_str)
+        cat_sum = sum(results_dict.values())
+        if cat_sum == 0:
+            return float('NaN')
+        return [results_dict[cat_str] / cat_sum for cat_str in class_lst]
+    
+    def predict_class(self, text):
+        if isinstance(text[0], list):
+            return [self.__predict_class_instance(t) for t in text]
+        else:
+            return self.__predict_class_instance(text)
+    
+    def __predict_class_instance(self, text_str: str):
+        result_dict = self.__liwc.annotate_sentence(text_str)
+        if sum([v for v in result_dict.values()]) == 0:
+            return None
+        return max(result_dict, key=result_dict.get)
+
+
+    def load(self):
+        raise Exception('Can not load this type of model')
+
+    def save(self):
+        raise Exception('Can not save this type of model')
+
+    def _save_params(self, path_str):
+        raise Exception('There are no parameters for this type of model')
+
+    def get_label(self):
+        return self._label_str
+
+    def exists(self):
+        return True
+
+
+class CentroidAndDistance:
+        def __init__(self, centroid_vector, distance):
+            self.centroid_vector = centroid_vector
+            self.distance = distance
+
+
+class WordEmbeddingsMatching(ModelBase): #TODO complete implementation
+
+    def __init__(self, model_label_str: str, w2v_path_str: str, distance_adjust_float=1):
+        self.__w2v = Word2Vec.load(w2v_path_str).wv
+        if distance_adjust_float < 0 or distance_adjust_float > 1:
+            raise ValueError('Invalid Distance Adjust Value {}'.format(distance_adjust_float))
+        self.__distance_adjust_float = distance_adjust_float
+        super().__init__(model_label_str)
+
+    def train(self, dataset: DatasetBase, epochs):
+        x_train, y_train = dataset.training_examples()
+        cat_to_words_dict = WordEmbeddingsMatching.__group_words_to_cats(x_train, y_train)
+        cat_to_centroids_and_dist_dict = {cat_str: self.__compute_centroid_and_distance(word_set) for cat_str, word_set in cat_to_words_dict.items()}
+        # TODO to complete
+    
+    @staticmethod
+    def __group_words_to_cats(x_train, y_train):
+        cat_to_words_dict = {}
+        for word_str, label_str in zip(x_train, y_train):
+            if label_str not in cat_to_words_dict:
+                cat_to_words_dict[label_str] = set()
+            cat_to_words_dict[label_str].add(word_str)
+        return cat_to_words_dict
+    
+
+    def __compute_centroid_and_distance(self, words_set: Set) -> CentroidAndDistance:
+        centroid = self.__w2v.get_mean_vector(list(words_set))
+        max = 0
+        for word_str in words_set:
+            word_v = self.__w2v.get_vector(word_str)
+            dist = distance.cosine(centroid, word_v)
+            if dist > max:
+                max = dist
+        return CentroidAndDistance(centroid, max)
+
+
+    def evaluate(self, dataset: DatasetBase, set_type):
+        pass
+
+    def predict(self, text_lst):
+        pass
+
+    def load(self):
+        pass
+
+    @abstractmethod
+    def save(self):
+        pass
+
+
+if __name__ == "__main__":
+    from phd_utils.annotators.liwc import liwc_en
+    from phd_utils.annotators.liwc import LiwcDict
+    m = LiwcCountsClassifier('', LiwcDict(liwc=liwc_en, categories_to_include_only=['work']))
+    r = m.predict(['work'])
+    print(r)
