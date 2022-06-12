@@ -1,8 +1,9 @@
 from phd_utils import global_config
 from liwc import Liwc
-from typing import List, Dict
+from typing import List, Dict, Union
 from random import Random
 import re
+import pandas as pd
 
 
 liwc_en = Liwc(global_config.liwc.path)
@@ -41,15 +42,223 @@ def get_liwc_category_examples(cat_str, count=4, rand_seed=0) -> List[str]:
     return r.sample(words_set, k=count)
 
 
+def annotations_from_liwc_output(liwc_out: Union[str,pd.DataFrame],
+                                 exclude_columns_lst: List[str]=[],
+                                 include_columns_lst: List[str]=[],
+                                 result_column_str: str='liwc') -> pd.DataFrame:
+    """
+    Converts LIWC tool output format to word-list of categories
+    """
+    if isinstance(liwc_out, str):
+        liwc_out_df = pd.read_csv(liwc_out, index_col='word')
+    elif isinstance(liwc_out, pd.DataFrame):
+        liwc_out_df = liwc_out.copy(deep=True)
+    else:
+        raise ValueError('Unregognize input for liwc_out parameter')
+
+    if exclude_columns_lst and include_columns_lst:
+        raise ValueError('Can not specify both include and exclude columns lists')
+
+    if exclude_columns_lst:    
+        liwc_out_df.drop(columns=exclude_columns_lst, inplace=True)
+    elif include_columns_lst:
+        liwc_out_df = liwc_out_df[include_columns_lst]
+    i = 0
+    def get_annotations(row_dict):
+        nonlocal i
+        i += 1
+        annotations_lst = []
+        for cat_str, value in row_dict.items():
+            if isinstance(value, str):
+                print(cat_str)
+                print(value)
+                print('line no {}'.format(i))
+                print(list(row_dict.items()))
+            if value > 0:
+                annotations_lst.append(cat_str)
+        return annotations_lst
+    
+    liwc_out_df[result_column_str] = liwc_out_df.apply(get_annotations, axis=1)
+    liwc_out_df = liwc_out_df[[result_column_str]]
+    return liwc_out_df
+
+
+def annotations_from_liwc22_output(liwc_out: Union[str,pd.DataFrame]) -> pd.DataFrame:
+    exclude_columns_liwc22_lst = [
+        'Segment',
+        'WC',
+        'Analytic',
+        'Clout',
+        'Authentic',
+        'Tone',
+        'WPS',
+        'BigWords',
+        'Dic',
+        'Linguistic',
+        'function',
+        'pronoun',
+        'ppron',
+        'i',
+        'we',
+        'you',
+        'shehe',
+        'they',
+        'ipron',
+        'det',
+        'article',
+        'number',
+        'prep',
+        'auxverb',
+        'adverb',
+        'conj',
+        'negate',
+        'verb',
+        'adj',
+        'focuspast',
+        'focuspresent',
+        'focusfuture',
+        'AllPunc',
+        'Period',
+        'Comma',
+        'QMark',
+        'Exclam',
+        'Apostro',
+        'OtherP'
+    ]
+    liwc22_df = annotations_from_liwc_output(liwc_out,
+                                             exclude_columns_lst=exclude_columns_liwc22_lst,
+                                             result_column_str='liwc22')
+    return liwc22_df
+
+
+__liwc22_to_liwc15_dict = {
+    'Drives': 'drives',
+    'affiliation': 'affiliation',
+    'achieve': 'achiev',
+    'power': 'power',
+    'cogproc': 'cogproc',
+    'insight': 'insight',
+    'cause': 'cause',
+    'discrep': 'discrep',
+    'tentat': 'tentat',
+    'differ': 'differ',
+    'Affect': 'affect',
+    'swear': 'swear',
+    'Social': 'social',
+    'family': 'family',
+    'friend': 'friend',
+    'female': 'female',
+    'male': 'male',
+    'leisure': 'leisure',
+    'home': 'home',
+    'work': 'work',
+    'money': 'money',
+    'relig': 'relig',
+    'health': 'health',
+    'sexual': 'sexual',
+    'death': 'death',
+    'reward': 'reward',
+    'risk': 'risk',
+    'motion': 'motion',
+    'space': 'space',
+    'time': 'time',
+    'netspeak': 'netspeak',
+    'assent': 'assent',
+    'nonflu': 'nonflu',
+    'filler': 'filler',
+    'tone_pos': 'posemo',
+    'tone_neg': 'negemo',
+    'emotion': 'affect',
+    'emo_pos': 'posemo',
+    'emo_neg': 'negemo',
+    'emo_anx': 'anx',
+    'emo_anger': 'anger',
+    'emo_sad': 'sad',
+    'Physical': 'bio',
+    'food': 'ingest',
+    'visual': 'see',
+    'auditory': 'hear',
+    'feeling': 'feel',
+    'quantity': 'quant',
+    'certitude': 'certain',
+    'allnone': 'certain',
+    'socrefs': 'social',
+    'illness': 'health',
+    'Perception': 'percept',
+    'Lifestyle': 'pconcern',
+    'Cognition': None,
+    'memory': None,
+    'socbehav': None,
+    'prosocial': None,
+    'polite': None,
+    'conflict': None,
+    'moral': None,
+    'comm': None,
+    'Culture': None,
+    'politic': None,
+    'ethnicity': None,
+    'tech': None,
+    'lifestyle': None,
+    'wellness': None,
+    'mental': None,
+    'substances': None,
+    'need': None,
+    'want': None,
+    'acquire': None,
+    'lack': None,
+    'fulfill': None,
+    'fatigue': None,
+    'curiosity': None,
+    'allure': None,
+    'attention': None,
+    'Conversation': None
+}
+
+
+__liwc15_to_liwc22_dict = {v: k for k, v in __liwc22_to_liwc15_dict.items() if v is not None}
+
+
+def map_classes_liwc22_to_liwc15(annotation: Union[pd.DataFrame, str], key_str: str=None) -> Union[pd.DataFrame, str]:
+    def fix_parent_if_needed(cat_lst: List[str]) -> List[str]:
+        if 'death' in cat_lst and 'bio' in cat_lst:
+            if set(['health', 'sexual', 'substances', 'food']).intersection(cat_lst):
+                cat_lst.insert(cat_lst.index('death'), 'pconcern')
+            else:
+                cat_lst[cat_lst.index('bio')] = 'pconcern'
+        
+        relativ_cat_set = list(set(['motion', 'space', 'time']).intersection(cat_lst))
+        if relativ_cat_set:
+            cat_lst.insert(cat_lst.index(relativ_cat_set[0]), 'relativ')
+        
+        return cat_lst
+    
+    if isinstance(annotation, str):
+        cat_str = __liwc22_to_liwc15_dict[annotation]
+        return fix_parent_if_needed([cat_str])[0]
+    elif isinstance(annotation, pd.DataFrame):
+        if not key_str:
+            raise ValueError('Must specify key in the data frame')
+        annotation[key_str] = annotation[key_str].apply(lambda c: __liwc22_to_liwc15_dict[c] if isinstance(c, str) else [__liwc22_to_liwc15_dict[c_str] for c_str in c])
+        annotation[key_str] = annotation[key_str].apply(fix_parent_if_needed)
+        annotation[key_str] = annotation[key_str].apply(lambda l: list(set(l)))
+        return annotation
+    else:
+        raise ValueError('Unknown type passed')
+
+
 class LiwcDict:
 
-    def __init__(self, dict_path_str:str=None, liwc: Liwc=None):
+    def __init__(self, dict_path_str:str=None, liwc: Liwc=None, categories_to_include_only: List[str]=None):
+        """
+        :param classes_to_include_only: list of classes to include only in the output and the rest is ignored
+        """
         if dict_path_str:
             self.liwc = Liwc(dict_path_str)
         elif liwc:
             self.liwc = liwc
         else:
             self.liwc = Liwc(global_config.liwc.path) # default english liwc
+        self.__categories_to_include_only = categories_to_include_only
         self.__strict_dict = self.__create_strict_liwc_dict()
     
     def __create_strict_liwc_dict(self) -> Dict[str, List[str]]:
@@ -60,15 +269,25 @@ class LiwcDict:
         return {remove_wild_card(key): value for key, value in self.liwc.lexicon.items()}
     
     def annotate_word(self, word_str: str) -> List[str]:
-        return self.liwc.search(word_str)
+        cat_lst = self.liwc.search(word_str)
+        if self.__categories_to_include_only:
+            return self.__filter_list(cat_lst)
+        else:
+            return cat_lst
 
     def annotate_sentence(self, word_lst: List[str], include_all_cats=False) -> Dict[str, int]:
+        """
+        :param include_all_cats: results dictionary will contain all liwc categories including ones with 0 hits
+        """
         result_dict = dict(self.liwc.parse(word_lst))
         if include_all_cats:
             all_dict = {cat_str: 0 for cat_str in self.liwc.categories.values()} # TODO should be done only once
             for cat_str, count_int in result_dict.items():
                 all_dict[cat_str] = count_int
-            return all_dict
+            result_dict = all_dict
+        
+        if self.__categories_to_include_only:
+            return self.__filter_dict(result_dict)
         else:
             return result_dict
     
@@ -78,10 +297,28 @@ class LiwcDict:
     def word_hit_count_strict(self, word_lst: List[str]) -> int:
         return sum([1 for word_str in word_lst if word_str in self.__strict_dict])
 
+    def __filter_dict(self, liwc_annotations: Dict[str, int]) -> Dict[str, int]:
+        """
+        Filters a LIWC parse result to include the selected cats only
+        """
+        return {k:v for k, v in liwc_annotations.items() if k in self.__categories_to_include_only}
+    
+    def __filter_list(self, liwc_annotations_lst: List[str]) -> List[str]:
+        """
+        Filters a LIWC search result to include selected categories only
+        """
+        return {c for c in liwc_annotations_lst if c in self.__categories_to_include_only}
+
     def filter_with_liwc(self, word_dict: Dict[str, int]) -> Dict[str, int]:
+        """
+        Returns only words that are in liwc (including wild card matches)
+        """
         return {k:v for k, v in word_dict.items() if self.liwc.search(k)}
     
     def filter_with_liwc_strict(self, word_dict: Dict[str, int]) -> Dict[str, int]:
+        """
+        Returns only words that are in liwc (with no wild card matches)
+        """
         return {k:v for k, v in word_dict.items() if k in self.__strict_dict}
 
     def annotate_word_strict(self, word_str: str) -> List[str]:
@@ -101,7 +338,10 @@ class LiwcDict:
         return cat_counts_dict
     
     def cat_count(self) -> int:
-        return len(self.liwc.categories)
+        if not self.__categories_to_include_only:
+            return len(self.liwc.categories)
+        else:
+            return len(self.__categories_to_include_only)
 
 
 class LiwcDictModifier:
