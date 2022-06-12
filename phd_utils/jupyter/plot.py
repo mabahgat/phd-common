@@ -2,7 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 
-def plot_precision_recall_threshold_curve(precision_lst, recall_lst, title_str=None, thresholds_lst=None):
+def plot_precision_recall_threshold_curve(precision_lst,
+                                          recall_lst,
+                                          title_str=None,
+                                          thresholds_lst=None,
+                                          font_size=25,
+                                          line_width=6,
+                                          x_lim=None,
+                                          y_lim=None):
     """
     Plots precision and recall against list of thresholds (by default from 0 to 1 with 100 steps)
     """
@@ -21,15 +28,21 @@ def plot_precision_recall_threshold_curve(precision_lst, recall_lst, title_str=N
         end = np.amax(thresholds_lst)
         set_minor_ticks(start, end)
 
-    ax.plot(thresholds_lst, precision_lst, label='Precision')
-    ax.plot(thresholds_lst, recall_lst, label='Recall')
-    ax.set_xlabel('Threshold')
-    ax.set_ylabel('Precision/Recall')
+    ax.plot(thresholds_lst, precision_lst, label='Precision', linewidth=line_width)
+    ax.plot(thresholds_lst, recall_lst, label='Recall', linewidth=line_width)
+    ax.set_xlabel('Threshold', fontsize=font_size)
+    ax.set_ylabel('Precision/Recall', fontsize=font_size)
+    if x_lim:
+        ax.set_xlim(x_lim)
+    if y_lim:
+        ax.set_ylim(y_lim)
     ax.grid(which='major')
     ax.grid(which='minor', linestyle='--')
     if title_str:
-        ax.set_title(title_str)
+        ax.set_title(title_str, fontsize=font_size)
     ax.legend()
+    plt.xticks(fontsize=font_size, rotation=90)
+    plt.yticks(fontsize=font_size)
     plt.show()
 
 
