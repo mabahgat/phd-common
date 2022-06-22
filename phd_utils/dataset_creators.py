@@ -88,14 +88,76 @@ class LiwcCategories:
         'filler': 'informal'
     }
 
-    def __init__(self, include_set: Set[str]=None):
+    VALUES_dict = {
+        'autonomy': None,
+        'creativity': None,
+        'emotion': None,
+        'moral': None,
+        'cognition': None,
+        'future': None,
+        'thinking': None,
+        'security': None,
+        'inner-peace': None,
+        'order': None,
+        'justice': None,
+        'advice': None,
+        'career': None,
+        'achievement': None,
+        'wealth': None,
+        'health': None,
+        'learning': None,
+        'nature': None,
+        'animals': None,
+        'purpose': None,
+        'responsible': None,
+        'hard-work': None,
+        'work-ethic': None,
+        'perseverance': None,
+        'feeling-good': None,
+        'forgiving': None,
+        'accepting-others': None,
+        'helping-others': None,
+        'gratitude': None,
+        'dedication': None,
+        'self-confidence': None,
+        'optimisim': None,
+        'honesty': None,
+        'truth': None,
+        'spirituality': None,
+        'religion': None,
+        'significant-other': None,
+        'marriage': None,
+        'friends': None,
+        'relationships': None,
+        'family': None,
+        'parents': None,
+        'siblings': None,
+        'social': None,
+        'children': None,
+        'society': None,
+        'art': None,
+        'respect': None,
+        'life': None
+    }
+
+    def __init__(self, include_set: Set[str], dict_type_str='liwc'):
         """
         Top level categories to include
         """
-        not_found_lst = [cat_str for cat_str in include_set if cat_str not in LiwcCategories.ORG_HIERARCHY_dict]
+        self.__hierarchy_dict = LiwcCategories.__get_dict(dict_type_str)
+        not_found_lst = [cat_str for cat_str in include_set if cat_str not in self.__hierarchy_dict.keys()]
         if not_found_lst:
             raise ValueError('Categories not found in liwc: {}'.format(not_found_lst))
         self.__include_set = include_set
+    
+    @staticmethod
+    def __get_dict(dict_type_str):
+        if dict_type_str == 'liwc':
+            return LiwcCategories.ORG_HIERARCHY_dict
+        elif dict_type_str == 'values':
+            return LiwcCategories.VALUES_dict
+        else:
+            raise ValueError('Unknown dict type {}'.format(dict_type_str))
 
     def map_list(self, cat_lst: List[str], empty_value=None) -> List[str]:
         """
@@ -112,51 +174,46 @@ class LiwcCategories:
                         found_lst.append(cat_str)
                     break
                 else:
-                    cat_str = LiwcCategories.ORG_HIERARCHY_dict[cat_str]
+                    cat_str = self.__hierarchy_dict[cat_str]
         return found_lst
     
-    @staticmethod
-    def get_head_classes() -> Set[str]:
-        return [k for k, v in LiwcCategories.ORG_HIERARCHY_dict.items() if v is None]
+    def get_head_classes(self) -> Set[str]:
+        return [k for k, v in self.__hierarchy_dict.items() if v is None]
     
-    @staticmethod
-    def add_parent_class_if_missing(cat_lst: List[str]) -> List[str]:
+    def add_parent_class_if_missing(self, cat_lst: List[str]) -> List[str]:
         """
         :return: List of categories maintaining order
         """
         cat_set = set(cat_lst)
         for idx, cat_str in reversed(list(enumerate(cat_lst))):
-            parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[cat_str]
+            parent_cat_str = self.__hierarchy_dict[cat_str]
             while parent_cat_str is not None and parent_cat_str not in cat_set:
                 cat_lst.insert(idx, parent_cat_str)
-                parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[parent_cat_str]
+                parent_cat_str = self.__hierarchy_dict[parent_cat_str]
         return cat_lst
     
-    @staticmethod
-    def get_children(cat_str) -> List[str]:
-        return [k for k, v in LiwcCategories.ORG_HIERARCHY_dict.items() if v == cat_str]
+    def get_children(self, cat_str) -> List[str]:
+        return [k for k, v in self.__hierarchy_dict.items() if v == cat_str]
     
-    @staticmethod
-    def get_parent(cat_str) -> str:
-        if cat_str not in LiwcCategories.ORG_HIERARCHY_dict:
+    def get_parent(self, cat_str) -> str:
+        if cat_str not in self.__hierarchy_dict:
             return None
         else:
-            return LiwcCategories.ORG_HIERARCHY_dict[cat_str]
+            return self.__hierarchy_dict[cat_str]
     
-    @staticmethod
-    def keep_lowest_cats_only(cat_lst: List[str]) -> List[str]:
+    def keep_lowest_cats_only(self, cat_lst: List[str]) -> List[str]:
         """
         For every category in the list remove it if there's a child category
         """
         to_remove_idx_set = set()
         cat_set = set(cat_lst)
         for cat_str in cat_lst:
-            parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[cat_str]
+            parent_cat_str = self.__hierarchy_dict[cat_str]
             while parent_cat_str is not None:
                 if parent_cat_str in cat_set:
                     idx = cat_lst.index(parent_cat_str) # expected that parent will always exist
                     to_remove_idx_set.add(idx)
-                parent_cat_str = LiwcCategories.ORG_HIERARCHY_dict[parent_cat_str]
+                parent_cat_str = self.__hierarchy_dict[parent_cat_str]
         for idx in sorted(to_remove_idx_set, reverse=True):
             del cat_lst[idx]
         return cat_lst
@@ -165,7 +222,7 @@ class LiwcCategories:
 class LiwcDatasetCreator:
 
     @staticmethod
-    def from_raw(input_file_str: Union[str], sep_str: str = r'\|'):
+    def from_raw(input_file_str: Union[str], sep_str: str = r'\|', cats_obj: LiwcCategories=None):
         """
         Read from '.dat' file. expected to contain columns:
         word, meaning, example, numLikes, numDislikes, tags
@@ -176,16 +233,16 @@ class LiwcDatasetCreator:
         LiwcDatasetCreator.__fix_text_column_inplace(raw_df, 'example')
         raw_df = LiwcDatasetCreator.__remove_bad_entries(raw_df)
         raw_df['diffLikes'] = pd.to_numeric(raw_df.numLikes) - pd.to_numeric(raw_df.numDislikes)
-        return LiwcDatasetCreator(raw_df, None)
+        return LiwcDatasetCreator(raw_df, cats_obj=cats_obj)
 
     @staticmethod
-    def from_existing(train_file_str: str, test_file_str: str, index_col=0):
+    def from_existing(train_file_str: str, test_file_str: str, index_col=0, cats_obj: LiwcCategories=None):
         """
         Read data frame files for training and testing
         """
         train_df = pd.read_csv(train_file_str, index_col=index_col)
         test_df = pd.read_csv(test_file_str, index_col=index_col)
-        return LiwcDatasetCreator(train_df=train_df, test_df=test_df)
+        return LiwcDatasetCreator(train_df=train_df, test_df=test_df, cats_obj=cats_obj)
 
     @staticmethod
     def __decode_text(text_str: str) -> str:
@@ -204,7 +261,7 @@ class LiwcDatasetCreator:
         content_df = content_df[content_df['numDislikes'].str.fullmatch(r'\d+')]
         return content_df
 
-    def __init__(self, raw_df: pd.DataFrame=None, train_df: pd.DataFrame=None, test_df: pd.DataFrame=None):
+    def __init__(self, raw_df: pd.DataFrame=None, train_df: pd.DataFrame=None, test_df: pd.DataFrame=None, cats_obj: LiwcCategories=None):
         """
         Either raw_df or train_df can be sepcified. if train_df is specified,
         test_df has to be specified too
@@ -222,6 +279,10 @@ class LiwcDatasetCreator:
         self.__raw_df = raw_df
         self.__train_df = train_df
         self.__test_df = test_df
+        if cats_obj is None:
+            self.__cats_obj = LiwcCategories(dict_type_str='liwc')
+        else:
+            self.__cats_obj = cats_obj
     
     def get_raw(self) -> pd.DataFrame:
         return LiwcDatasetCreator.__get_copy_or_none(self.__raw_df)
@@ -282,7 +343,7 @@ class LiwcDatasetCreator:
         if minDiff:
             annotated_df = annotated_df[annotated_df.diffLikes >= minDiff]
         
-        annotated_df['liwc'] = annotated_df.liwc.apply(LiwcCategories.keep_lowest_cats_only)
+        annotated_df['liwc'] = annotated_df.liwc.apply(self.__cats_obj.keep_lowest_cats_only)
         
         self.__train_df = annotated_df
         return len(self.__train_df)
@@ -331,7 +392,7 @@ class LiwcDatasetCreator:
             raise ValueError('Neither count nor minimum instnace count specified')
 
         annotated_df = self.get_raw_annotated()
-        annotated_df['liwc'] = annotated_df.liwc.apply(LiwcCategories.keep_lowest_cats_only) # match distribution
+        annotated_df['liwc'] = annotated_df.liwc.apply(self.__cats_obj.keep_lowest_cats_only) # match distribution
         if min_diff_int is not None:
             annotated_df = annotated_df[annotated_df.diffLikes >= min_diff_int]
         sorted_df = annotated_df.sort_values(by='diffLikes', ascending=False)
@@ -354,7 +415,7 @@ class LiwcDatasetCreator:
         Compute category percentages based on LIWC identified unique word occurances in UD
         """
         per_word_df = self.get_raw_annotated().groupby('word').first()
-        per_word_df['liwc'] = per_word_df.liwc.apply(LiwcCategories.keep_lowest_cats_only)
+        per_word_df['liwc'] = per_word_df.liwc.apply(self.__cats_obj.keep_lowest_cats_only)
         return LiwcDatasetCreator.__compute_distribution(per_word_df.liwc)
     
     def __compute_distribution_liwc_based(self) -> Dict[str, float]:
@@ -363,11 +424,12 @@ class LiwcDatasetCreator:
         """
         selected_cats_set = set()
         self.__get_annotated().liwc.apply(selected_cats_set.update)
-        selected_cats_obj = LiwcCategories(selected_cats_set)
+        # TODO make below lines configurable
+        #selected_cats_obj = LiwcCategories(selected_cats_set)
         liwc_en_strict_df = LiwcDatasetCreator.__dict_to_df(get_liwc_en_strict_dict_copy(), 'word', 'liwc')
-        liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(selected_cats_obj.map_list)
-        liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(LiwcCategories.add_parent_class_if_missing)
-        liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(LiwcCategories.keep_lowest_cats_only)
+        #liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(selected_cats_obj.map_list)
+        #liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(self.__cats_obj.add_parent_class_if_missing)
+        #liwc_en_strict_df['liwc'] = liwc_en_strict_df.liwc.apply(self.__cats_obj.keep_lowest_cats_only)
         return LiwcDatasetCreator.__compute_distribution(liwc_en_strict_df.liwc)
     
     def __compute_distribution_entry_based(self) -> Dict[str, float]:
@@ -376,7 +438,7 @@ class LiwcDatasetCreator:
         for each LIWC category
         """
         per_entry_df = self.get_raw_annotated()
-        per_entry_df['liwc'] = per_entry_df.liwc.apply(LiwcCategories.keep_lowest_cats_only)
+        per_entry_df['liwc'] = per_entry_df.liwc.apply(self.__cats_obj.keep_lowest_cats_only)
         return LiwcDatasetCreator.__compute_distribution(per_entry_df.liwc)
     
     @staticmethod
@@ -461,8 +523,9 @@ class LiwcDatasetCreator:
         if content_df is not None:
             if overwrite_b or 'liwc' not in content_df.columns:
                 LiwcDatasetCreator.__annotate_in_place(content_df, annotation_type_str)
-                if with_categories is not None:
-                    content_df['liwc'] = content_df.liwc.apply(with_categories.map_list)
+                # TODO temp comment out
+                #if with_categories is not None:
+                    #content_df['liwc'] = content_df.liwc.apply(with_categories.map_list)
             return content_df
         else:
             return None
@@ -511,8 +574,9 @@ class LiwcDatasetCreator:
             content_df['liwc'] = content_df.word.apply(lambda word_str: liwc_annotate_word_strict(str(word_str)))
         else:
             raise ValueError('Unknown annotation type "{}"'.format(annotation_type_str))
+        # TODO make below line configurable
         # tool used to do LIWC annotation skips some parent categories and only add child categories - add them
-        content_df['liwc'] = content_df.liwc.apply(LiwcCategories.add_parent_class_if_missing)
+        #content_df['liwc'] = content_df.liwc.apply(LiwcCategories.add_parent_class_if_missing)
 
     
     @staticmethod
@@ -562,6 +626,11 @@ class LiwcDatasetCreator:
     def __save(self, content_df: pd.DataFrame, path_str: str) -> None:
         content_df['liwc'] = content_df.liwc.apply(lambda cats_lst: '|'.join(cats_lst))
         content_df.to_csv(path_str)
+
+
+def __values_cats_for_all() -> LiwcCategories:
+    cats_set = set(['autonomy', 'creativity', 'emotion', 'moral', 'cognition', 'future', 'thinking', 'security', 'inner-peace', 'order', 'justice', 'advice', 'career', 'achievement', 'wealth', 'health', 'learning', 'nature', 'animals', 'purpose', 'responsible', 'hard-work', 'work-ethic', 'perseverance', 'feeling-good', 'forgiving', 'accepting-others', 'helping-others', 'gratitude', 'dedication', 'self-confidence', 'optimisim', 'honesty', 'truth', 'spirituality', 'religion', 'significant-other', 'marriage', 'friends', 'relationships', 'family', 'parents', 'siblings', 'social', 'children', 'society', 'art', 'respect', 'life'])
+    return LiwcCategories(cats_set, dict_type_str='values')
 
 
 def __liwc_cats_for_all() -> LiwcCategories:
@@ -656,7 +725,7 @@ def __liwc_create_train_sets(train_df: pd.DataFrame, cats_obj: LiwcCategories, r
     """
     create and saves files for top1, top10, minDiff1 and minDiff10
     """
-    dataset_obj = LiwcDatasetCreator(raw_df=train_df)
+    dataset_obj = LiwcDatasetCreator(raw_df=train_df, cats_obj=cats_obj)
     dataset_obj.redo_categories(cats_obj)
 
     dataset_obj.select_for_train(topN=10, ignore_testset_b=True)
@@ -691,7 +760,7 @@ def __liwc_create_train_sets(train_df: pd.DataFrame, cats_obj: LiwcCategories, r
 
 
 def __liwc_create_test_sets(test_df: pd.DataFrame, cats_obj: LiwcCategories, root_path: Path, prefix_str: str) -> None:
-    dataset_obj = LiwcDatasetCreator(test_df=test_df)
+    dataset_obj = LiwcDatasetCreator(test_df=test_df, cats_obj=cats_obj)
     dataset_obj.redo_categories(cats_obj)
     save_path = root_path / '{}_test-top1-1000.csv'.format(prefix_str)
     dataset_obj.save_test(save_path, overwrite_b=True)
@@ -786,5 +855,31 @@ def create_liwc_datasets():
     print('Done!')
 
 
+def create_values_datasets():
+    from phd_utils import global_config
+    
+    root_path = Path(global_config.values.create_run.root)
+    if not root_path.exists():
+        raise Exception('Target path does not exist {}'.format(root_path))
+
+    used_cats = __values_cats_for_all()
+
+    print('Reading dataset from {}'.format(global_config.resources.ud.raw))
+    dataset = LiwcDatasetCreator.from_raw(global_config.resources.ud.raw, cats_obj=used_cats)
+    dataset.filter_names()
+    dataset.filter_stopwords()
+    dataset.annotate(annotation_type_str='strict', with_categories=used_cats)
+    #dataset.redo_categories(__values_cats_for_all())
+    dataset.select_for_test(count=1000, top_count_int=1, min_diff_int=1)
+    dataset.save_test(root_path / 'values_all_test-top1-1000.csv', overwrite_b=True)
+    dataset.select_for_train() # select everything other than the testset
+
+    print('Creating root')
+    __liwc_create_train_sets(train_df=dataset.get_train(), cats_obj=used_cats, root_path=root_path, prefix_str='values_root-48')
+    __liwc_create_test_sets(test_df=dataset.get_test(), cats_obj=used_cats, root_path=root_path, prefix_str='values_root-48')
+    
+    print('Done!')
+
+
 if __name__ == "__main__":
-    create_liwc_datasets()
+    create_values_datasets()

@@ -1,12 +1,13 @@
 from phd_utils import global_config
-from liwc import Liwc
+from liwc import Liwc as LiwcLookup
 from typing import List, Dict, Union
 from random import Random
 import re
 import pandas as pd
 
 
-liwc_en = Liwc(global_config.liwc.path)
+#liwc_en = LiwcLookup(global_config.liwc.path)
+liwc_en = LiwcLookup(global_config.values.path) # TODO take as parameter
 
 def __create_strict_liwc_dict() -> Dict[str, List[str]]:
     def remove_wild_card(entry_str):
@@ -248,16 +249,16 @@ def map_classes_liwc22_to_liwc15(annotation: Union[pd.DataFrame, str], key_str: 
 
 class LiwcDict:
 
-    def __init__(self, dict_path_str:str=None, liwc: Liwc=None, categories_to_include_only: List[str]=None):
+    def __init__(self, dict_path_str:str=None, liwc: LiwcLookup=None, categories_to_include_only: List[str]=None):
         """
         :param classes_to_include_only: list of classes to include only in the output and the rest is ignored
         """
         if dict_path_str:
-            self.liwc = Liwc(dict_path_str)
+            self.liwc = LiwcLookup(dict_path_str)
         elif liwc:
             self.liwc = liwc
         else:
-            self.liwc = Liwc(global_config.liwc.path) # default english liwc
+            self.liwc = LiwcLookup(global_config.liwc.path) # default english liwc
         self.__categories_to_include_only = categories_to_include_only
         self.__strict_dict = self.__create_strict_liwc_dict()
     
@@ -431,7 +432,7 @@ class LiwcDictModifier:
         for word_str, cat_str in new_words_lst.items():
             word_str = str(word_str) # pandas auto parses 'nan' string into float
             word_str = re.sub(pattern=r'\s+', repl=' ', string=word_str)
-            if '$' in word_str: # '$' is a special char in Liwc lib that marks end of word
+            if '$' in word_str: # '$' is a special char in LiwcLookup lib that marks end of word
                 raise ValueError('Can not accept words with $: {}'.format(word_str))
             if '*' in word_str and not word_str.endswith('*'):
                 raise ValueError('The character * has a special meaning and only accepted at the end of the word: {}'.format(word_str))
