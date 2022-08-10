@@ -120,7 +120,9 @@ class DataSetCreator:
         if test_percent is None and test_count is None:
             raise ValueError('Either test_percent or test_count has to be specified')
         if test_percent is None:
-            test_percent = float(test_count) / self.__corpus_df.size
+            test_percent = float(test_count) / self.__corpus_df.word.unique().size
+            if test_percent >= 1:
+                raise ValueError('Test set percentage is too high {}, unique word values is {}'.format(test_count, self.__corpus_df.word.unique().size))
         if test_percent >= 1:
             raise ValueError('Test percentage {} is too big compared to corpus size {}.'
                              .format(test_percent, self.__corpus_df.size))
