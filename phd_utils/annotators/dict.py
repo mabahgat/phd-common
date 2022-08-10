@@ -69,10 +69,9 @@ class DictWithSelectLabels(DictBase, ABC):
         while find_label_str not in self.__selected_labels_set:
             find_label_str = self.__label_tree_dict[find_label_str]
             if find_label_str is None:
-                self.__mapping_cache_dict[find_label_str] = None
-                return None
+                break
         self.__mapping_cache_dict[label_str] = find_label_str
-        return label_str
+        return find_label_str
 
 
 class ValuesDict(DictWithSelectLabels):
